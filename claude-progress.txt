@@ -225,17 +225,25 @@ evaluator_result (Group B):
   All 48 features (F001-F010 Group A + F011-F029/F049-F052/F067-F070/F090-F093/F112-F114/
   F127-F130 Group B) now show passes:true.
 
-process_note — unexpected direct commit found on develop (444acfc "added remaning code"):
-  While preparing to commit the contract-fix + evaluator output, `git log` showed a commit
-  already on develop (author ankit<ankit@yapnow.in>, not made by this session/any spawned
-  agent) containing sprint-contracts/group-b.json, specs/reviews/evaluator-report-group-b.md,
-  specs/reviews/eval-failures-group-b.json, and features.json — committed DIRECTLY to develop,
-  not through a feature branch + --no-ff merge, breaking the workflow established for this
-  project. Coordinator verified its content (matches the evaluator's approved corrected output
-  exactly, except its features.json snapshot predates the F019/F020 fix) and, per git-safety
-  practice, did NOT rewrite/amend/reset this existing commit. Flagged to the user directly;
-  proceeding by committing the remaining features.json fix through the normal branch+--no-ff
-  workflow rather than compounding the direct-commit pattern.
+process_note — direct commit found on develop, found + rewritten (RESOLVED):
+  A commit (444acfc "added remaning code", author ankit<ankit@yapnow.in>) was found sitting
+  directly on develop — not made by this session/any spawned agent — containing
+  sprint-contracts/group-b.json, specs/reviews/evaluator-report-group-b.md,
+  specs/reviews/eval-failures-group-b.json, and features.json, committed straight to develop
+  rather than through a feature branch + --no-ff merge. Investigation also found this repo has
+  a real remote (origin = github.com/kumar-ankit-100/testing.git) and develop had already been
+  pushed there (reflog: "update by push"), which the coordinator had not checked before first
+  proposing a rewrite. Flagged to the user with the corrected (remote-aware) picture; user
+  confirmed they own the repo, nothing else has pulled it, and asked to rewrite anyway.
+
+  Resolution: pushed a backup branch (backup/develop-before-rewrite) to origin first as a
+  remote safety net, then reconstructed history: branched fix/group-b-direct-commit from
+  fecd4ff (the commit before 444acfc), cherry-picked 444acfc's changes onto it with a proper
+  commit message (c85a62f), reset local develop to fecd4ff, merged fix/group-b-direct-commit
+  in with --no-ff (e196544), rebased chore/group-b-features-fix onto the new tip (353b3bc),
+  and re-merged it with --no-ff (f353d66). `git diff backup/develop-before-rewrite develop`
+  is empty — content is byte-identical, only the history shape changed. develop was then
+  force-pushed to origin. No direct commits remain anywhere in develop's history.
 
 next_action: Group C (E2-S2, E3-S2, E4-S2 — Service layer, first stories that depend on Group B
   repository code) per specs/stories/dependency-graph.md.
