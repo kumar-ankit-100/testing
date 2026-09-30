@@ -8,7 +8,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.types.enums import ReasonCode
-from app.types.exceptions import AuthenticationError, AuthorizationError
+from app.types.exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    PlanVersionImmutableError,
+)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -25,6 +29,12 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request, exc: AuthorizationError
     ) -> JSONResponse:
         return _error_response(403, ReasonCode.FORBIDDEN, str(exc))
+
+    @app.exception_handler(PlanVersionImmutableError)
+    async def _handle_plan_version_immutable_error(
+        _request: Request, exc: PlanVersionImmutableError
+    ) -> JSONResponse:
+        return _error_response(409, ReasonCode.PLAN_VERSION_IMMUTABLE, str(exc))
 
 
 def _error_response(status_code: int, reason_code: ReasonCode, message: str) -> JSONResponse:
