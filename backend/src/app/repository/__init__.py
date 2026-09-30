@@ -23,6 +23,12 @@ from app.repository.port_out_repository import (
     create_port_out_event,
     get_active_port_out_event,
 )
+from app.repository.reporting_repository import (
+    activation_funnel_counts,
+    arpu_trend,
+    monthly_churn_rate,
+    plan_mix_distribution,
+)
 from app.repository.schema import apply_schema
 from app.repository.state_transition_repository import (
     append_state_transition,
@@ -42,8 +48,10 @@ from app.repository.user_repository import (
 )
 
 __all__ = [
+    "activation_funnel_counts",
     "append_state_transition",
     "apply_schema",
+    "arpu_trend",
     "close_port_out_event",
     "create_billing_record",
     "create_csr_override",
@@ -64,5 +72,7 @@ __all__ = [
     "list_csr_overrides_for_subscription",
     "list_state_transitions_for_subscription",
     "list_versions",
+    "monthly_churn_rate",
+    "plan_mix_distribution",
     "publish_plan_version",
 ]
