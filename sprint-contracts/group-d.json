@@ -1,0 +1,119 @@
+{
+  "group": "D",
+  "stories": ["E2-S3", "E3-S3"],
+  "features": [
+    "F034", "F035", "F036", "F037", "F038", "F039",
+    "F058", "F059", "F060", "F061", "F062"
+  ],
+  "contract": {
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "activation_service.py imports Types/Config/Repository only (no API); plan_router.py/plan_schemas.py import Types/Config/Repository/Service only (no UI). Zero upward violations."
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy --strict clean on all of backend/src; no `Any` usage."
+      },
+      "folder_structure": {
+        "required": true,
+        "description": "service/activation_service.py, api/routers/plan_router.py, api/schemas/plan_schemas.py exist with matching test files; subscriber_repository.py gained get_subscription_by_subscriber_id/activate_subscription; plan_repository.py gained get_plan_version_by_id/list_all_plan_versions; api/deps.py gained get_db_connection; api/error_handlers.py gained the 409 PlanVersionImmutableError mapping; api/main.py wires register_exception_handlers into create_app() and mounts plan_router; types/exceptions.py gained ActivationRejectedError."
+      },
+      "env_vars": {
+        "required": false,
+        "description": "No new environment variables introduced in Group D."
+      },
+      "migrations": {
+        "required": false,
+        "description": "No schema.sql changes in Group D — both stories operate on tables/columns already created in Group B."
+      },
+      "test_checks": [
+        {
+          "id": "grp-d-01", "feature": "F034", "story": "E2-S3", "ac": "AC-1",
+          "description": "Activation with KYC-verified, a valid dealer code, and MNP-success transitions PENDING_KYC -> ACTIVE and appends a StateTransition row.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_activation_service.py::test_activation_with_all_checks_passing_transitions_to_active_and_appends_transition",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-02", "feature": "F035", "story": "E2-S3", "ac": "AC-2",
+          "description": "Activation with unverified KYC is rejected with reason code KYC_UNVERIFIED; subscription remains PENDING_KYC.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_activation_service.py::test_activation_with_unverified_kyc_is_rejected_and_subscription_remains_pending",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-03", "feature": "F036", "story": "E2-S3", "ac": "AC-3",
+          "description": "Activation with dealer code DEALER-FAIL (and, independently, any unknown/unseeded dealer code) is rejected with reason code DEALER_INVALID.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_activation_service.py::test_activation_with_dealer_fail_sentinel_is_rejected_and_subscription_remains_pending tests/unit/test_activation_service.py::test_activation_with_an_unknown_dealer_code_is_also_rejected",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-d-04", "feature": "F037", "story": "E2-S3", "ac": "AC-4",
+          "description": "Activation with the MNP-fail flag is rejected with reason code MNP_FAILED.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_activation_service.py::test_activation_with_mnp_fail_flag_is_rejected_and_subscription_remains_pending",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-05", "feature": "F038", "story": "E2-S3", "ac": "AC-5",
+          "description": "Activating a subscription not in PENDING_KYC (already ACTIVE) raises InvalidSubscriberStateException, checked before any rule evaluation.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_activation_service.py::test_activating_an_already_active_subscription_raises_invalid_state_exception",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-06", "feature": "F039", "story": "E2-S3", "ac": "AC-6",
+          "description": "Two pending registrations for the same mobile number racing to activate: only one reaches ACTIVE, the other is rejected via the DB-level partial unique index on UPDATE.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_activation_service.py::test_two_pending_registrations_for_the_same_mobile_only_one_reaches_active",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-07", "feature": "F058", "story": "E3-S3", "ac": "AC-1",
+          "description": "POST /api/admin/plans (admin role) creates a draft plan version and returns HTTP 201.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_plan_api.py::test_create_plan_version_returns_201_with_draft",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-08", "feature": "F059", "story": "E3-S3", "ac": "AC-2",
+          "description": "POST /api/admin/plans/{id}/publish publishes a draft and returns HTTP 200 with published: true.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_plan_api.py::test_publish_plan_version_returns_200_with_published_true",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-09", "feature": "F060", "story": "E3-S3", "ac": "AC-3",
+          "description": "PUT /api/admin/plans/{id} on an already-published version returns HTTP 409 with an immutability reason code.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_plan_api.py::test_put_on_an_already_published_version_returns_409_with_immutability_message",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-10", "feature": "F061", "story": "E3-S3", "ac": "AC-4",
+          "description": "GET /api/admin/plans returns the full version history including superseded versions.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_plan_api.py::test_get_plan_list_returns_full_version_history_including_superseded",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-d-11", "feature": "F062", "story": "E3-S3", "ac": "AC-5",
+          "description": "A non-admin principal receives HTTP 403 on create/list/publish/update (test_non_admin_receives_403_for_create_and_list is parametrized over 2 cases [create, list] -> collects as 2 items; combined with the 2 dedicated publish/update tests, 4 items total. Verified via isolated collect run, not assumed.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_plan_api.py::test_non_admin_receives_403_for_create_and_list tests/integration/test_plan_api.py::test_non_admin_receives_403_for_publish tests/integration/test_plan_api.py::test_non_admin_receives_403_for_update",
+          "expected": "4 passed"
+        },
+        {
+          "id": "grp-d-12-full-suite", "feature": null, "story": "all Group D stories", "ac": "cross-cutting gate",
+          "description": "Full backend test suite, lint, and strict typecheck all clean together (regression gate covering Groups A+B+C+D combined). Also covers grp-d-13's no-stray-DB-file concern implicitly via a clean git status after the run.",
+          "command": "cd backend && uv run pytest -q && uv run ruff check . && uv run mypy src/",
+          "expected": "196 passed; ruff: All checks passed!; mypy: Success: no issues found in 47 source files"
+        },
+        {
+          "id": "grp-d-13-coverage", "feature": null, "story": "all Group D stories", "ac": "cross-cutting gate",
+          "description": "100% statement coverage across all backend source files touched through Group D.",
+          "command": "cd backend && uv run pytest -q --cov=app --cov-report=term-missing",
+          "expected": "TOTAL 100% (823 or more statements, 0 missing)"
+        },
+        {
+          "id": "grp-d-14-no-stray-db", "feature": null, "story": "all Group D stories", "ac": "cross-cutting gate",
+          "description": "E3-S3 introduced the first lifespan that touches disk on every TestClient(create_app()) call; confirms no real SQLite file is created at the default DB_PATH by the test suite (tests must isolate DB_PATH per-test).",
+          "command": "find /home/ankit/AI-native-capstone/backend -maxdepth 2 -name '*.db' -not -path '*/.mypy_cache/*' 2>/dev/null; echo DONE",
+          "expected": "DONE with no .db file paths printed before it (mypy's own internal .mypy_cache/*/cache.N.db files are unrelated and excluded)"
+        }
+      ]
+    }
+  },
+  "note_for_evaluator": "test_non_admin_receives_403_for_create_and_list is parametrized over 2 cases — its expected count (grp-d-11, combined with 2 other tests: 4 total) was verified via an isolated pytest run before writing this contract, continuing the practice started after Group B's off-by-one mistake. api_checks/playwright_checks are intentionally empty: E3-S3's router IS a real HTTP surface, but there is still no long-running server process at this per-group evaluation stage — its integration tests use FastAPI's in-process TestClient (tests/integration/test_plan_api.py), equivalent evidence to a live call. Skip the Docker/health-check step and evaluate only contract.architecture_checks, including every test_checks entry."
+}
