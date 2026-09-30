@@ -189,9 +189,53 @@ process_note — no agent team spawned for Group B, by design:
   tool-constraints; no rework or merge conflicts resulted. Full detail in iteration-log.md's
   "## Group B" section.
 
-next_action: coordinator to independently re-verify (full backend suite + ruff + mypy) before
-  merging feat/group-b-foundations into develop; then either (a) generator writes
-  sprint-contracts/group-b.json and hands off to evaluator, or (b) coordinator does so directly,
-  matching whichever division of labor was used for Group A. After Group B evaluation, Group C
-  (E2-S2, E3-S2, E4-S2 — Service layer, first stories that depend on Group B repository code)
-  is next per specs/stories/dependency-graph.md.
+=== Session 3 ===
+date: 2026-09-30
+mode: evaluator (+ coordinator direct fixes)
+groups_completed: [A, B]
+groups_remaining: [C, D, E, F, G, H]
+current_group: none (B closed out)
+sprint_contract: sprint-contracts/group-b.json (38 features + 2 cross-cutting gates, 40 test_checks)
+
+evaluator_result (Group B):
+  Coordinator independently re-verified Group B's implementation before writing the contract
+  (re-ran full suite: 129 passed, ruff clean, mypy clean, 100% coverage; spot-checked schema.sql
+  triggers, import boundaries, the auth Depends(get_settings) bug-fix, and the reporting-repo
+  documented limitation — all matched the generator's claims exactly).
+
+  First evaluator pass: FAIL. 38/40 test_checks + all 5 architecture_checks passed; grp-b-09
+  and grp-b-10 failed on an exact-count mismatch (contract expected "3 passed"/"7 passed", got
+  "4 passed"/"8 passed"). Root cause (coordinator independently confirmed via
+  `pytest -v --collect-only`): test_csr_or_admin_can_access_their_scoped_endpoint_without_403
+  (tests/integration/test_auth.py:135-136) is @pytest.mark.parametrize("role", [Role.CSR,
+  Role.ADMIN]), collecting as 2 items. This was a sprint-contract authoring bug (coordinator's
+  own miscount when writing the contract), not a code defect — all 129 tests were genuinely
+  green throughout. Correctly NOT sent through a generator fix-loop (that would have meant
+  weakening a correct, more-thorough test to satisfy a wrong expected-count).
+
+  Fix: coordinator corrected sprint-contracts/group-b.json's two expected strings in place
+  ("3 passed"->"4 passed", "7 passed"->"8 passed") and asked the same evaluator instance to
+  re-check just those two entries. Second evaluator pass: VERDICT PASS, 40/40 test_checks +
+  all 5 required architecture_checks (including migrations, required:true for this group since
+  schema.sql now exists — apply_schema() idempotency live-verified: 3x calls, stable
+  dealer_master row count). The evaluator subagent hit the account's rate limit
+  (HTTP 429) immediately after writing its report/failures files but before updating
+  features.json for F019/F020 — coordinator finished that step directly (re-ran both corrected
+  commands itself: 4 passed, 8 passed; then patched features.json F019/F020 to passes:true).
+  All 48 features (F001-F010 Group A + F011-F029/F049-F052/F067-F070/F090-F093/F112-F114/
+  F127-F130 Group B) now show passes:true.
+
+process_note — unexpected direct commit found on develop (444acfc "added remaning code"):
+  While preparing to commit the contract-fix + evaluator output, `git log` showed a commit
+  already on develop (author ankit<ankit@yapnow.in>, not made by this session/any spawned
+  agent) containing sprint-contracts/group-b.json, specs/reviews/evaluator-report-group-b.md,
+  specs/reviews/eval-failures-group-b.json, and features.json — committed DIRECTLY to develop,
+  not through a feature branch + --no-ff merge, breaking the workflow established for this
+  project. Coordinator verified its content (matches the evaluator's approved corrected output
+  exactly, except its features.json snapshot predates the F019/F020 fix) and, per git-safety
+  practice, did NOT rewrite/amend/reset this existing commit. Flagged to the user directly;
+  proceeding by committing the remaining features.json fix through the normal branch+--no-ff
+  workflow rather than compounding the direct-commit pattern.
+
+next_action: Group C (E2-S2, E3-S2, E4-S2 — Service layer, first stories that depend on Group B
+  repository code) per specs/stories/dependency-graph.md.
