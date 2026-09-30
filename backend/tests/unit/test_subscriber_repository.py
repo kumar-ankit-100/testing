@@ -6,11 +6,13 @@ from datetime import UTC, datetime
 import pytest
 
 from app.repository.subscriber_repository import (
+    activate_subscription,
     create_subscriber,
     create_subscription,
     get_active_subscription_by_mobile,
     get_subscriber_by_id,
     get_subscriber_by_mobile,
+    get_subscription_by_subscriber_id,
 )
 from app.types.enums import PlanType, SubscriberState
 from app.types.subscriber import Subscriber
@@ -224,3 +226,80 @@ def test_get_active_subscription_by_mobile_round_trips_a_real_activated_at(
     assert found == active
     assert found is not None
     assert found.activated_at == _NOW
+
+
+def test_get_subscription_by_subscriber_id_finds_the_matching_row(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0009-4e11-9f22-333344445555", "9876540009")
+    create_subscriber(sqlite_connection, subscriber)
+    subscription = _build_subscription(
+        "c2b3d4e5-0009-4f22-8a33-444455556666",
+        subscriber.subscriber_id,
+        subscriber.mobile_number,
+        SubscriberState.PENDING_KYC,
+    )
+    create_subscription(sqlite_connection, subscription)
+
+    found = get_subscription_by_subscriber_id(sqlite_connection, subscriber.subscriber_id)
+
+    assert found == subscription
+
+
+def test_get_subscription_by_subscriber_id_returns_none_when_not_found(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    assert get_subscription_by_subscriber_id(sqlite_connection, "does-not-exist") is None
+
+
+def test_activate_subscription_sets_active_state_and_timestamps(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0010-4e11-9f22-333344445555", "9876540010")
+    create_subscriber(sqlite_connection, subscriber)
+    subscription = _build_subscription(
+        "c2b3d4e5-0010-4f22-8a33-444455556666",
+        subscriber.subscriber_id,
+        subscriber.mobile_number,
+        SubscriberState.PENDING_KYC,
+    )
+    create_subscription(sqlite_connection, subscription)
+    activated_at = datetime(2026, 2, 2, 10, 0, tzinfo=UTC)
+
+    activate_subscription(sqlite_connection, subscription.subscription_id, activated_at)
+
+    reloaded = get_subscription_by_subscriber_id(sqlite_connection, subscriber.subscriber_id)
+    assert reloaded is not None
+    assert reloaded.state == SubscriberState.ACTIVE
+    assert reloaded.activated_at == activated_at
+    assert reloaded.updated_at == activated_at
+
+
+def test_activate_subscription_raises_integrity_error_for_a_second_active_mobile(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    """The partial unique index also guards UPDATE, not just INSERT — this
+    is the mechanism behind E2-S3 AC-6's double-activation race guard.
+    """
+    subscriber_a = _build_subscriber("b1a2c3d4-0011-4e11-9f22-333344445555", "9876540011")
+    create_subscriber(sqlite_connection, subscriber_a)
+    subscription_a = _build_subscription(
+        "c2b3d4e5-0011-4f22-8a33-444455556666",
+        subscriber_a.subscriber_id,
+        subscriber_a.mobile_number,
+        SubscriberState.ACTIVE,
+    )
+    create_subscription(sqlite_connection, subscription_a)
+
+    subscriber_b = _build_subscriber("b1a2c3d4-0012-4e11-9f22-333344445555", "9876540011")
+    create_subscriber(sqlite_connection, subscriber_b)
+    subscription_b = _build_subscription(
+        "c2b3d4e5-0012-4f22-8a33-444455556666",
+        subscriber_b.subscriber_id,
+        subscriber_b.mobile_number,
+        SubscriberState.PENDING_KYC,
+    )
+    create_subscription(sqlite_connection, subscription_b)
+
+    with pytest.raises(sqlite3.IntegrityError):
+        activate_subscription(sqlite_connection, subscription_b.subscription_id, _NOW)
