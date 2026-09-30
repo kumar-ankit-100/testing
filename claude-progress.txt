@@ -14,13 +14,13 @@ blocked_stories: none
 
 === Session 1 ===
 date: 2026-09-30
-mode: /implement (generator)
-groups_completed: [] (Group A implemented by generator; NOT yet evaluator-approved — do not mark complete until evaluator runs)
-groups_remaining: [A (pending evaluation), B, C, D, E, F, G, H]
-current_group: A
-current_stories: [E1-S1, E1-S2] — code + tests written and committed; awaiting evaluator
-sprint_contract: none written yet for Group A (no sprint-contracts/group-a.json exists — should be created before/with evaluation)
-last_commit: d62e740 (develop) — "Merge feat/group-a-types-config into develop"
+mode: /implement (generator) + evaluator
+groups_completed: [A] — evaluator VERDICT: PASS, 11/11 test_checks + all required architecture_checks passed (specs/reviews/evaluator-report-group-a.md, specs/reviews/eval-failures-group-a.json: {"failures": []})
+groups_remaining: [B, C, D, E, F, G, H]
+current_group: none (A closed out)
+current_stories: [E1-S1, E1-S2] — code + tests written, committed, and evaluator-approved
+sprint_contract: sprint-contracts/group-a.json (10 features F001-F010 + 1 cross-cutting full-suite gate)
+last_commit: see git section below
 backend_test_suite: 29/29 passing, 100% line coverage on all files touched (app.types, app.config), ruff clean, mypy --strict clean
 coverage: 100% (backend/src/app/types, backend/src/app/config; no other backend code exists yet)
 learned_rules: 0
@@ -66,9 +66,21 @@ process_note — agent-team coordination gap discovered this session:
   test+commit in one continuous run, reviewed post-hoc via diff instead of a blocking pre-code
   gate.
 
-next_action: write sprint-contracts/group-a.json (or confirm evaluator does this), then hand
-  off Group A to the evaluator agent for verification against E1-S1/E1-S2 acceptance criteria
-  before starting Group B (E1-S3, E1-S4, E1-S5, E2-S1, E3-S1, E4-S1, E5-S1, E6-S1, E7-S1).
+evaluator_result (Group A):
+  VERDICT: PASS. All 11 sprint-contracts/group-a.json test_checks passed (grp-a-01..11), all
+  required architecture_checks passed (layering, typing, folder_structure, env_vars);
+  migrations correctly N/A (required: false). No api_checks/playwright_checks — Group A has no
+  running app yet (API/health endpoint is E1-S5, a later group); this was called out in the
+  contract's note_for_evaluator and the evaluator correctly skipped the Docker/health-check
+  step rather than falsely failing on an app that isn't built yet. features.json (root) F001-F010
+  set to passes:true, last_evaluated 2026-09-30T04:30:11Z. Independently re-verified by the
+  coordinator (re-ran full backend suite: 29 passed, ruff clean, mypy clean) before accepting
+  the verdict.
+
+next_action: start Group B (9 stories, max 5 concurrent per Implement skill: E1-S3, E1-S4,
+  E1-S5, E2-S1, E3-S1, E4-S1, E5-S1, E6-S1, E7-S1), using the corrected non-blocking teammate
+  process (single-shot teammates that plan+TDD+implement+commit in one continuous run,
+  reviewed post-hoc) rather than the broken blocking-approval-gate pattern from Group A.
 
 phase_1_brd: approved (specs/brd/brd.md)
 phase_2_spec: approved (7 epics, 34 stories, 153 features; specs/stories/*.md, specs/stories/dependency-graph.md, specs/features.json)
