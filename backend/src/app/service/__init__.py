@@ -12,6 +12,7 @@ from app.service.plan_catalog_service import (
     update_draft_plan_version,
 )
 from app.service.registration_service import register_subscriber
+from app.service.suspend_resume_service import resume_subscription, suspend_subscription
 
 __all__ = [
     "JsonFormatter",
@@ -21,6 +22,8 @@ __all__ = [
     "get_logger",
     "publish_plan_version",
     "register_subscriber",
+    "resume_subscription",
+    "suspend_subscription",
     "update_draft_plan_version",
 ]
 
