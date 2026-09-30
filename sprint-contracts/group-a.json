@@ -1,0 +1,131 @@
+{
+  "group": "A",
+  "stories": ["E1-S1", "E1-S2"],
+  "features": ["F001", "F002", "F003", "F004", "F005", "F006", "F007", "F008", "F009", "F010"],
+  "contract": {
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "Types has zero imports from Config/Repository/Service/API/UI (E1-S1 AC-4); Config imports only from Types (E1-S2 AC-3)."
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy --strict clean on backend/src/app/types and backend/src/app/config; no `Any` usage; Decimal-typed money fields reject non-Decimal input (E1-S1 AC-3)."
+      },
+      "folder_structure": {
+        "required": true,
+        "description": "Every file listed for E1-S1/E1-S2 in specs/design/component-map.md exists on disk."
+      },
+      "env_vars": {
+        "required": true,
+        "description": "Settings expose DB path, KYC/MNP/dealer-fail stub flags from env vars with documented defaults (E1-S2 AC-1); unset vars fall back to defaults (E1-S2 AC-4)."
+      },
+      "migrations": {
+        "required": false,
+        "description": "No DB migrations in Group A (schema.sql lands with the first Repository story, E2-S1)."
+      },
+      "test_checks": [
+        {
+          "id": "grp-a-01",
+          "feature": "F001",
+          "story": "E1-S1",
+          "ac": "AC-1",
+          "description": "SubscriberState enum defines exactly the 6 named values and no others.",
+          "command": "cd backend && uv run python -c \"from app.types.enums import SubscriberState; assert {e.value for e in SubscriberState} == {'PENDING_KYC','ACTIVE','SUSPENDED','TERMINATED','PORT_OUT_REQUESTED','PORTED_OUT'}; print('OK')\"",
+          "expected": "prints OK, exit code 0"
+        },
+        {
+          "id": "grp-a-02",
+          "feature": "F002",
+          "story": "E1-S1",
+          "ac": "AC-2",
+          "description": "Declarative FSM table contains exactly the 8 valid edges; transition() returns target_state for each; transition() raises InvalidSubscriberStateException for any pair not in the table (including terminal-state re-entry).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_fsm.py",
+          "expected": "13 passed, 0 failed"
+        },
+        {
+          "id": "grp-a-03",
+          "feature": "F003",
+          "story": "E1-S1",
+          "ac": "AC-3",
+          "description": "Subscriber, Subscription, PlanVersion, BillingRecord, StateTransition, PortOutEvent, CSROverride, DealerMaster are defined with typed fields; money fields (PlanVersion.price, BillingRecord.pro_rata_amount/charges_total) are Decimal.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_types.py",
+          "expected": "10 passed, 0 failed"
+        },
+        {
+          "id": "grp-a-04",
+          "feature": "F004",
+          "story": "E1-S1",
+          "ac": "AC-4",
+          "description": "Types module has zero imports from Config, Repository, Service, API, or UI.",
+          "command": "cd backend && grep -rnE '^(from|import)[[:space:]]+app\\.(config|repository|service|api)' src/app/types || echo NONE_FOUND",
+          "expected": "NONE_FOUND (no matches)"
+        },
+        {
+          "id": "grp-a-05",
+          "feature": "F005",
+          "story": "E1-S1",
+          "ac": "AC-5",
+          "description": "Unit tests instantiate each of the 8 domain types with valid data and assert field types, including that PlanVersion.price and BillingRecord.charges_total reject non-Decimal input with TypeError.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_types.py::test_plan_version_rejects_non_decimal_price tests/unit/test_types.py::test_billing_record_rejects_non_decimal_charges_total",
+          "expected": "2 passed, 0 failed (same file as grp-a-03 — this check isolates the negative-path Decimal-rejection assertions specifically)"
+        },
+        {
+          "id": "grp-a-06",
+          "feature": "F006",
+          "story": "E1-S2",
+          "ac": "AC-1",
+          "description": "Typed settings object exposes db_path, kyc_stub_verified, mnp_stub_success, dealer_fail_code, loaded from env vars with documented defaults.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_config.py::test_settings_falls_back_to_documented_defaults_when_env_unset tests/unit/test_config.py::test_settings_reads_overrides_from_environment tests/unit/test_config.py::test_get_settings_returns_a_settings_instance",
+          "expected": "3 passed, 0 failed"
+        },
+        {
+          "id": "grp-a-07",
+          "feature": "F007",
+          "story": "E1-S2",
+          "ac": "AC-2",
+          "description": "SQLite connection is configured with PRAGMA journal_mode=WAL applied at startup and returns a working connection.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_config.py::test_create_connection_applies_wal_journal_mode tests/unit/test_config.py::test_create_connection_returns_a_working_sqlite_connection",
+          "expected": "2 passed, 0 failed"
+        },
+        {
+          "id": "grp-a-08",
+          "feature": "F008",
+          "story": "E1-S2",
+          "ac": "AC-3",
+          "description": "Config module imports only from Types (no Repository/Service/API/UI imports).",
+          "command": "cd backend && grep -rnE '^(from|import)[[:space:]]+app\\.(repository|service|api)' src/app/config || echo NONE_FOUND",
+          "expected": "NONE_FOUND (no matches)"
+        },
+        {
+          "id": "grp-a-09",
+          "feature": "F009",
+          "story": "E1-S2",
+          "ac": "AC-4",
+          "description": "Unit test asserts an unset environment variable falls back to its documented default value.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_config.py::test_settings_falls_back_to_documented_defaults_when_env_unset",
+          "expected": "1 passed, 0 failed"
+        },
+        {
+          "id": "grp-a-10",
+          "feature": "F010",
+          "story": "E1-S2",
+          "ac": "AC-5",
+          "description": "Unit test asserts the dealer-fail trigger code and KYC/MNP stub flags are exact string/boolean constants usable by the activation service.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_config.py::test_stub_flag_constants_are_exact_string_and_boolean_values_for_activation_service",
+          "expected": "1 passed, 0 failed"
+        },
+        {
+          "id": "grp-a-11-full-suite",
+          "feature": null,
+          "story": "E1-S1, E1-S2",
+          "ac": "cross-cutting gate",
+          "description": "Full Group A test suite, lint, and strict typecheck all clean together (regression gate, not tied to a single AC).",
+          "command": "cd backend && uv run pytest -q && uv run ruff check . && uv run mypy src/",
+          "expected": "29 passed; ruff: All checks passed!; mypy: Success: no issues found in 23 source files"
+        }
+      ]
+    }
+  },
+  "note_for_evaluator": "Group A (E1-S1 Types, E1-S2 Config) has no running application yet — the API layer and /health endpoint are not built until E1-S5. api_checks and playwright_checks are intentionally empty. Per evaluate/SKILL.md ('Architecture Checks... does not require Docker to be running'), skip the health-check/Docker-reachability step entirely for this group and evaluate only the architecture_checks block above, including every entry in test_checks. A PASS verdict requires all 11 test_checks entries to pass with no rationalization."
+}
