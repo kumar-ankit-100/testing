@@ -519,9 +519,40 @@ fixes require breaking vite/vitest major-version upgrades). Left as-is deliberat
 production/runtime exposure for a local-dev-only project; flagged for a future maintenance
 pass rather than risking a mid-group config break.
 
-next_action: coordinator to independently re-verify (full backend suite + ruff + mypy, full
-  frontend suite + lint + typecheck + build) before merging
-  feat/group-e-lifecycle-services-and-apis into develop; then write sprint-contracts/group-e.json
-  and hand off to evaluator. After Group E evaluation, Group F (E2-S5 subscriber UI, E4-S4 plan
-  change API, E5-S4 suspend/resume+port-out API, E6-S2 CSR override service, E6-S5 termination
-  service, E7-S2 reporting service) is next per specs/stories/dependency-graph.md.
+=== Session 7 ===
+date: 2026-09-30
+mode: evaluator
+groups_completed: [A, B, C, D, E]
+groups_remaining: [F, G, H]
+current_group: none (E closed out)
+sprint_contract: sprint-contracts/group-e.json (23 features + 3 cross-cutting gates, 26 test_checks spanning backend pytest + frontend vitest)
+
+evaluator_result (Group E):
+  Coordinator independently re-verified before writing the contract (backend: 237 passed,
+  ruff/mypy clean, 100% coverage 1036 statements; frontend: 12/12 vitest, lint/typecheck/build
+  all clean; spot-checked the suspend/resume FSM-ambiguity bug fix, the plan_change preview/
+  commit shared-path symmetry, and the AdminPlanCatalogPage against the mockup — all matched).
+  Verified every vitest -t filter's exact match/skip count myself before dispatching (first
+  time using vitest instead of pytest for contract checks). Evaluator VERDICT: PASS — 26/26
+  test_checks, all 4 required architecture_checks (layering, typing, folder_structure, env_vars;
+  migrations N/A). features.json (root) grew from 73 to 96 entries, all passing. Coordinator
+  independently re-ran both full suites + coverage after the evaluator's report — matched
+  exactly.
+
+FINDING — auth-login spec gap (flagged, not blocking):
+  No story anywhere in specs/stories/ builds POST /api/auth/login, though api-contracts.md
+  requires it and both E1-S4's auth deps and E3-S3's admin router (already evaluator-approved
+  in Group D) assume it exists. E3-S3's tests only pass because they mint tokens directly via
+  auth_service.create_access_token() in test setup, not through any real endpoint — no real
+  client can currently obtain a token for any already-built admin/CSR-gated route. E2-S4/E3-S4
+  (this group) independently hit the same wall and left their subscriber routes ungated rather
+  than invent unscoped auth wiring, documented in code comments on both stacks. Confirmed by
+  the evaluator as a genuine spec-decomposition gap, same category as the E6-S5/S6 termination
+  gap caught during the design phase. Does not block any current story's ACs. DECISION NEEDED
+  before Group F or G (whichever mounts more auth-gated routes): add a new story for the login
+  endpoint (backend) + token storage/attachment (frontend), similar to how the termination gap
+  was resolved by amending the spec directly.
+
+next_action: awaiting user decision on the auth-login gap, then Group F (E2-S5 subscriber UI,
+  E4-S4 plan change API, E5-S4 suspend/resume+port-out API, E6-S2 CSR override service, E6-S5
+  termination service, E7-S2 reporting service) per specs/stories/dependency-graph.md.
