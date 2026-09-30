@@ -99,6 +99,22 @@ def test_non_pii_context_fields_pass_through_unmasked(
     assert entry["context"]["plan_id"] == "PLAN-UNLIMITED-5G"
 
 
+def test_identity_proof_ref_in_context_is_masked_to_last_four_characters(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """identity_proof_ref (E2-S2 AC-4) is masked using the same rule as
+    mobile_number/aadhaar_ref/pan_ref."""
+    logger = get_logger("test.logging_service.identity_proof_ref")
+    raw_ref = "AADHAAR-XXXX-XXXX-4321"
+
+    logger.info("Subscriber registered", extra={"context": {"identity_proof_ref": raw_ref}})
+
+    captured = capsys.readouterr().out.strip()
+    entry = json.loads(captured)
+    assert entry["context"]["identity_proof_ref"] == "******************4321"
+    assert raw_ref not in captured
+
+
 def test_get_logger_does_not_attach_duplicate_handlers_on_repeated_calls() -> None:
     first = get_logger("test.logging_service.idempotent")
     second = get_logger("test.logging_service.idempotent")
