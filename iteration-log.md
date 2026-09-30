@@ -177,5 +177,73 @@ Notable in-flight findings:
 
 Result: 196 tests, 100% line coverage across the entire backend (823
 statements), ruff/mypy clean, zero upward-layer imports. All commits on
-feat/group-d-activation-and-plan-api. Awaiting evaluator review (not
-self-assessed by the generator).
+feat/group-d-activation-and-plan-api. Passed evaluator review (14/14
+checks, all architecture_checks, 196/196 tests). Pushed to origin as
+801ac1c. Verified as develop's tip before starting Group E.
+
+## Group E
+
+5 stories: E2-S4 (registration/activation API), E3-S4 (admin plan catalog
+UI — first frontend code), E4-S3 (plan change service), E5-S2
+(suspend/resume service), E5-S3 (port-out request service). All backend
+stories share no files with each other except api/main.py (only E2-S4
+touches it, to mount its router) and error_handlers.py (extended by
+E2-S4). E3-S4 is a separate frontend/ codebase entirely. Implemented
+sequentially in dependency-safe order: E5-S2 -> E5-S3 -> E4-S3 (backend
+services, no shared files, order chosen for increasing complexity) ->
+E2-S4 (API layer, needs E2-S3/activation_service + registration_service)
+-> E3-S4 (frontend, last since it's the most self-contained/separate).
+One commit per story on feat/group-e-lifecycle-services-and-apis.
+
+Notable in-flight findings:
+  - E5-S2: the shared FSM edge table can't distinguish "resume" from
+    other flows that also land on ACTIVE (activation from PENDING_KYC,
+    cancel-within-window from PORT_OUT_REQUESTED). transition(PENDING_KYC,
+    ACTIVE) is a structurally valid FSM edge, so relying on the generic
+    FSM check alone let resume_subscription wrongly succeed on a
+    PENDING_KYC subscription instead of raising
+    InvalidSubscriberStateException (AC-4) — caught by a parametrized
+    test before fixing it with an explicit expected_from_state check
+    ahead of the FSM call. suspend_subscription didn't need this fix
+    (SUSPENDED has exactly one valid incoming edge), which is itself the
+    reason the bug was resume-specific and easy to miss by symmetry.
+  - E4-S3: added min_tenure_days to Settings (default 90 — no story pins
+    an exact value; documented as a standard telecom minimum-tenure
+    window). preview_plan_change and commit_plan_change share one
+    internal pro-rata computation path so they can never disagree,
+    mirroring E4-S2's own preview/commit symmetry guarantee.
+  - E2-S4 and E3-S4 both surfaced the same real design gap independently:
+    api-contracts.md documents these routes (register/activate on the
+    backend; the admin plan routes the frontend calls) as requiring a
+    bearer token minted by POST /api/auth/login, but no story anywhere
+    in specs/stories/dependency-graph.md builds that login endpoint.
+    Rather than inventing unscoped, untestable auth wiring, both sides
+    are implemented without it for now, documented in code comments on
+    both the backend (subscriber_schemas.py) and frontend (App.tsx-
+    adjacent comments) — a future auth-API story would need to close
+    this gap on both sides together.
+  - E3-S4: frontend/ scaffolded from scratch (Vite + React 18 +
+    TypeScript + vitest + eslint flat config + @testing-library/react +
+    @playwright/test, per folder-structure.md). Verified beyond just
+    lint/typecheck/vitest: production build succeeds and the dev server
+    was smoke-tested serving real HTML on :5173 (started, curled,
+    killed — no stray process left running). e2e/admin-plan-catalog.spec.ts
+    was written to the project's Playwright selector/wait conventions but
+    NOT executed — it needs live dev servers on both stacks plus the
+    auth gap above resolved; that's future work, not skipped out of
+    neglect.
+  - npm audit reports 5 dev-dependency-only vulnerabilities (vitest
+    mocker path traversal, esbuild dev-server CORS) with fixes available
+    only via breaking major-version upgrades of vite/vitest. Left as-is:
+    both are dev-tooling-only advisories with no production/runtime
+    exposure in this project's actual deployment (local dev servers,
+    not a hosted vitest/esbuild dev server exposed to untrusted
+    networks), and force-upgrading risked breaking the vitest config
+    written against v2's API mid-group. Flagged for whoever runs a
+    later dependency-maintenance pass.
+
+Result: backend — 237 tests, 100% line coverage across 1036 statements,
+ruff/mypy clean, zero upward-layer imports. frontend — 12 vitest tests,
+eslint clean, tsc --noEmit clean, production build succeeds. All commits
+on feat/group-e-lifecycle-services-and-apis. Awaiting evaluator review
+(not self-assessed by the generator).
