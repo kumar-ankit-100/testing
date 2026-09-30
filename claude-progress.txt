@@ -245,8 +245,56 @@ process_note — direct commit found on develop, found + rewritten (RESOLVED):
   is empty — content is byte-identical, only the history shape changed. develop was then
   force-pushed to origin. No direct commits remain anywhere in develop's history.
 
-next_action: Group C (E2-S2, E3-S2, E4-S2 — Service layer, first stories that depend on Group B
-  repository code) per specs/stories/dependency-graph.md.
+=== Session 4 ===
+date: 2026-09-30
+mode: /implement (generator) + evaluator
+groups_completed: [A, B, C]
+groups_remaining: [D, E, F, G, H]
+current_group: none (C closed out)
+sprint_contract: sprint-contracts/group-c.json (14 features + 2 cross-cutting gates, 16 test_checks)
+
+what_was_built (Group C — Service layer, first stories depending on Group B repositories):
+  - E4-S2 (billing_calculation_service.py): calculate_pro_rata_charge, pure function, no
+    story-pinned formula (BRD explicitly defers exact thresholds) — coordinator-verified
+    formula design: per-day price differential x days strictly after change_date through
+    cycle_end, calendar.monthrange for exact days-in-month, clamped >= 0.00. 10 tests
+    (6-scenario parametrized table + 4 dedicated), all Decimal, zero float.
+  - E2-S2 (registration_service.py): register_subscriber — validates mobile format before
+    any write, rejects duplicate ACTIVE via new subscriber_repository.get_active_subscription_by_mobile,
+    creates Subscriber+Subscription in PENDING_KYC, logs with identity_proof_ref masked (added
+    to logging_service.PII_FIELD_NAMES). Found and fixed a real bug in E1-S3's logging_service.py:
+    get_logger()'s handler bound sys.stdout at construction time, so only the first test to
+    ever use a given logger name would see capsys-captured output — fixed with
+    _CurrentStdoutHandler re-resolving sys.stdout on every emit(). 9 tests.
+  - E3-S2 (plan_catalog_service.py): create_draft_plan_version/update_draft_plan_version/
+    publish_plan_version, all admin-only (checked in-service, independent of API layer, per
+    system-design.md 5.4). update_draft_plan_version raises the new PlanVersionImmutableError
+    before any write if the target is published; extended plan_repository.py with a real
+    update path for draft (unpublished) rows. 10 tests.
+  - Git workflow: single branch feat/group-c-services off develop (tip 2b3e9ba, re-verified
+    post-history-rewrite before branching), one commit per story, merged --no-ff into develop
+    as f5c7af4. No direct commits to develop or main.
+  - Process: sequential implementation by genuine choice (not tool-constraint necessity this
+    time — these 3 stories share zero files, unlike Group B) since reconciling independently-
+    written services for convention consistency afterward costs more than writing all three
+    with shared context already loaded.
+
+evaluator_result (Group C):
+  Coordinator independently re-verified before writing the contract (165 passed, ruff/mypy
+  clean, 100% coverage 664 statements; spot-checked the pro-rata formula, registration service,
+  plan catalog service, and the logging_service bug-fix — all matched exactly). Learned from
+  Group B's mistake: verified every parametrized test's exact collected count via
+  `pytest --collect-only` before writing sprint-contracts/group-c.json (5 malformed-mobile
+  examples, 6 boundary-date scenarios, 2 non-admin-role items), so no count-mismatch this time.
+  Evaluator VERDICT: PASS on first pass — 16/16 test_checks, all required architecture_checks
+  (layering, typing, folder_structure; env_vars/migrations correctly N/A, both required:false
+  for this group since no new env vars or schema changes). features.json (root) grew from 48
+  to 62 entries (added F030-F033, F053-F057, F071-F075), all passing. Coordinator independently
+  re-ran the full suite + coverage after the evaluator's report — matched exactly.
+
+next_action: Group D (E2-S3 — rule-based activation engine, E3-S3 — plan catalog admin API
+  endpoints) per specs/stories/dependency-graph.md. First stories to reach the API layer with
+  real business routers (beyond E1-S4/E1-S5's auth/health scaffolding).
 
 === Session 3 ===
 date: 2026-09-30
