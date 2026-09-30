@@ -102,3 +102,30 @@ BEFORE DELETE ON plan_versions
 BEGIN
     SELECT RAISE(ABORT, 'plan_versions: rows are append-only, delete is not permitted');
 END;
+
+-- E4-S1: billing_records — fully append-only (no update path ever, unlike
+-- plan_versions' one-time publish flip). Money columns stored as TEXT,
+-- reconstructed as Decimal on read (system-design.md 5.5).
+CREATE TABLE IF NOT EXISTS billing_records (
+    billing_record_id TEXT PRIMARY KEY,
+    subscription_id TEXT NOT NULL REFERENCES subscriptions (subscription_id),
+    from_plan_version_id TEXT,
+    to_plan_version_id TEXT NOT NULL,
+    pro_rata_amount TEXT NOT NULL,
+    charges_total TEXT NOT NULL,
+    billing_period_start TEXT NOT NULL,
+    billing_period_end TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_billing_records_no_update
+BEFORE UPDATE ON billing_records
+BEGIN
+    SELECT RAISE(ABORT, 'billing_records: rows are append-only, update is not permitted');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_billing_records_no_delete
+BEFORE DELETE ON billing_records
+BEGIN
+    SELECT RAISE(ABORT, 'billing_records: rows are append-only, delete is not permitted');
+END;
