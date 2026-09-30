@@ -247,3 +247,82 @@ process_note — direct commit found on develop, found + rewritten (RESOLVED):
 
 next_action: Group C (E2-S2, E3-S2, E4-S2 — Service layer, first stories that depend on Group B
   repository code) per specs/stories/dependency-graph.md.
+
+=== Session 3 ===
+date: 2026-09-30
+mode: /implement (generator)
+groups_completed: [A, B] (unchanged — B confirmed evaluator PASS, 40/40 checks, per Session 2's
+  process_note detail)
+groups_remaining: [C (implemented by generator, NOT yet evaluator-approved), D, E, F, G, H]
+current_group: C
+current_stories: [E2-S2, E3-S2, E4-S2] — all 3 code + tests written and committed; awaiting
+  evaluator (do not mark groups_completed until reviewed)
+sprint_contract: none written yet for Group C
+last_commit: see git log on feat/group-c-services (3 story commits, not yet merged to develop
+  as of this entry write — merge happens immediately after, see git section)
+backend_test_suite: 165/165 passing, 100% line coverage across the entire backend (664
+  statements), ruff clean, mypy --strict clean, zero upward-layer imports (grep-verified)
+coverage: 100%
+learned_rules: 1 (unchanged — Rule 1 in .claude/state/learned-rules.md)
+blocked_stories: none
+
+Verified before starting: pulled current develop, confirmed tip = 2b3e9ba as the coordinator
+specified (matching the post-history-rewrite state from Session 2's process_note), re-ran the
+full backend suite on that tip (129/129, ruff/mypy clean) before branching feat/group-c-services
+from it. No cached/stale state used.
+
+what_was_built (Group C):
+  - E4-S2 (billing_calculation_service): pure function, no I/O, no repository dependency at
+    runtime despite the dependency-graph edge to E4-S1 (that edge is about build ORDER — this
+    module needs no actual E4-S1 import). calculate_pro_rata_charge(from_plan_price,
+    to_plan_price, change_date, billing_cycle_start, billing_cycle_end) -> Decimal. No story
+    specifies the exact numeric formula (BRD explicitly defers it to implementation) — designed
+    and documented this module's own formula: per-day price differential x days strictly AFTER
+    change_date through cycle end (change_date excluded), days-in-cycle from
+    calendar.monthrange(change_date's year/month) so leap-year Feb is exact, clamped >= 0.00.
+    10 tests, 6 hand-verified table-driven boundary scenarios (exact-boundary=0.00, Feb 2026
+    non-leap, Feb 2028 leap, downgrade-clamps-to-zero, 31-day month, 30-day month) plus
+    out-of-range ValueError tests and a same-price-is-zero sanity check. 100% coverage, no
+    float anywhere (grep-verified).
+  - E2-S2 (registration_service): register_subscriber(connection, mobile_number,
+    identity_proof_ref, plan_type, registered_at) -> Subscription. 10-digit format validated
+    before any DB write (AC-3); DuplicateActiveSubscriptionError raised ahead of the DB partial
+    unique index if mobile_number already has an ACTIVE subscription (AC-2); creates
+    Subscriber+Subscription in PENDING_KYC (AC-1); logs registration with identity_proof_ref
+    masked, full value still persisted (AC-4). Extended subscriber_repository.py (E2-S1) with
+    get_active_subscription_by_mobile (deliberately deferred in Group B pending a real caller);
+    extended logging_service.PII_FIELD_NAMES with identity_proof_ref; added
+    InvalidMobileNumberError + DuplicateActiveSubscriptionError to types/exceptions.py. FOUND
+    AND FIXED a real bug in logging_service.py (E1-S3): get_logger()'s handler bound sys.stdout
+    once at construction, but get_logger() is idempotent per name, so only the first test ever
+    to trigger a given logger name would see capsys-captured output — every later test reusing
+    that name silently wrote into an earlier, torn-down buffer. Would have silently broken
+    every future service's log-content tests. Fixed with _CurrentStdoutHandler (re-reads
+    sys.stdout on every emit()). 17 new/changed tests total across 3 files.
+  - E3-S2 (plan_catalog_service): create_draft_plan_version (v1 for new plan_id, else
+    max+1, AC-1/AC-4), update_draft_plan_version (raises new PlanVersionImmutableError if
+    target is published, AC-3, checked before any write), publish_plan_version (AC-2). All
+    three require an admin Principal, checked in-service independent of the API layer
+    (system-design.md 5.4 pattern, AC-5). Extended plan_repository.py (E3-S1) with
+    update_draft_plan_version (a real update path for unpublished rows — always legal at the
+    DB level per the E3-S1 trigger, just never exposed until this story needed a genuine
+    "attempt to edit" entry point). Added PlanVersionImmutableError to types/exceptions.py
+    (folder-structure.md named this back in Group A/B, now filled in). 10 tests covering all 5
+    ACs including the full AC-4 round-trip (publish v1, create v2, reload v1 from DB, confirm
+    untouched) and non-admin rejection with zero side effects for all 3 mutating operations.
+
+process_note — sequential implementation chosen again, this time by genuine choice not just
+  tool-constraint necessity: component-map.md shows these 3 stories share ZERO files (unlike
+  Group B's 5-way schema.sql coupling), so parallel teammates were structurally viable this
+  time (e.g. via Agent isolation:"worktree" per-teammate to sidestep the no-SendMessage
+  concurrent-git-ops risk). Chose sequential anyway: merging 3 independently-written services
+  back afterward risks convention drift (exception-naming style, masking approach, admin-check
+  pattern) that costs more to review-and-reconcile post-hoc across 3 diffs than to just write
+  all three directly with full shared context already in hand. Order: E4-S2 (fully
+  self-contained) -> E2-S2 -> E3-S2 (most involved, needs a new exception + repository
+  extension). Full detail in iteration-log.md's "## Group C" section.
+
+next_action: coordinator to independently re-verify (full backend suite + ruff + mypy) before
+  merging feat/group-c-services into develop; then write sprint-contracts/group-c.json and hand
+  off to evaluator. After Group C evaluation, Group D (E2-S3 activation engine, E3-S3 plan
+  catalog admin API) is next per specs/stories/dependency-graph.md.
