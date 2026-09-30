@@ -29,3 +29,21 @@ class AuthorizationError(Exception):
 
     def __init__(self, message: str = "Not authorized to perform this action") -> None:
         super().__init__(message)
+
+
+class InvalidMobileNumberError(Exception):
+    """Raised when a mobile number does not match the 10-digit pattern (E2-S2)."""
+
+    def __init__(self, mobile_number: str) -> None:
+        self.mobile_number = mobile_number
+        super().__init__(f"Mobile number {mobile_number!r} is not a valid 10-digit number")
+
+
+class DuplicateActiveSubscriptionError(Exception):
+    """Raised when a mobile number already has an ACTIVE subscription (E2-S2)."""
+
+    def __init__(self, mobile_number: str) -> None:
+        self.mobile_number = mobile_number
+        super().__init__(
+            f"Mobile number {mobile_number!r} already has an ACTIVE subscription"
+        )
