@@ -1,0 +1,282 @@
+{
+  "group": "B",
+  "stories": ["E1-S3", "E1-S4", "E1-S5", "E2-S1", "E3-S1", "E4-S1", "E5-S1", "E6-S1", "E7-S1"],
+  "features": [
+    "F011", "F012", "F013", "F014", "F015",
+    "F016", "F017", "F018", "F019", "F020",
+    "F021", "F022", "F023", "F024",
+    "F025", "F026", "F027", "F028", "F029",
+    "F049", "F050", "F051", "F052",
+    "F067", "F068", "F069", "F070",
+    "F090", "F091", "F092", "F093",
+    "F112", "F113", "F114",
+    "F127", "F128", "F129", "F130"
+  ],
+  "contract": {
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "Types has zero imports from Config/Repository/Service/API/UI; Config imports only Types; Repository imports only Types/Config; Service has no API imports; grep-verified for every Group B file."
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy --strict clean on all of backend/src; no `Any` usage."
+      },
+      "folder_structure": {
+        "required": true,
+        "description": "Every file listed for E1-S3, E1-S4, E1-S5, E2-S1, E3-S1, E4-S1, E5-S1, E6-S1, E7-S1 in specs/design/component-map.md exists on disk (component-map.md itself has not yet been updated with the actual schema.py/schema.sql split introduced in E1-S4 — flag as a doc-drift note if so, not a failure, since the story ACs are what's authoritative)."
+      },
+      "env_vars": {
+        "required": true,
+        "description": "Settings gained jwt_secret_key/jwt_algorithm/jwt_expiry_minutes (E1-S4) with dev-only documented defaults, env-overridable, consistent with E1-S2's existing pattern."
+      },
+      "migrations": {
+        "required": true,
+        "description": "schema.sql introduced in this group (E1-S4) and grown incrementally by E2-S1/E3-S1/E4-S1/E5-S1/E6-S1; apply_schema() in schema.py must apply idempotently (CREATE TABLE IF NOT EXISTS, CREATE TRIGGER IF NOT EXISTS, INSERT OR IGNORE for dealer seed)."
+      },
+      "test_checks": [
+        {
+          "id": "grp-b-01", "feature": "F011", "story": "E1-S3", "ac": "AC-1",
+          "description": "Logger emits each entry as a single JSON object with at minimum timestamp, level, message keys.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_logging_service.py::test_log_entry_is_single_json_object_with_required_keys",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-02", "feature": "F012", "story": "E1-S3", "ac": "AC-2",
+          "description": "A logged mobile number is masked to last 4 digits; the full number never appears unmasked.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_logging_service.py::test_mobile_number_in_context_is_masked_to_last_four_digits",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-03", "feature": "F013", "story": "E1-S3", "ac": "AC-3",
+          "description": "Aadhaar and PAN references are masked with the same partial-reveal rule.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_logging_service.py::test_aadhaar_and_pan_refs_are_masked_with_same_partial_reveal_rule",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-04", "feature": "F014", "story": "E1-S3", "ac": "AC-4",
+          "description": "A payload containing all three PII fields never has any raw value appear as a substring of the emitted JSON.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_logging_service.py::test_all_three_pii_fields_together_never_appear_unmasked_in_emitted_json",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-05", "feature": "F015", "story": "E1-S3", "ac": "AC-5",
+          "description": "logging_service.py and pii_mask.py import only from Types and Config.",
+          "command": "cd backend && grep -rnE '^(from|import)[[:space:]]+app\\.(repository|api)' src/app/service/logging_service.py src/app/lib/pii_mask.py || echo NONE_FOUND",
+          "expected": "NONE_FOUND"
+        },
+        {
+          "id": "grp-b-06", "feature": "F016", "story": "E1-S4", "ac": "AC-1",
+          "description": "Unauthenticated request to a protected route receives HTTP 401 (including a malformed bearer token).",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth.py::test_unauthenticated_request_receives_401 tests/integration/test_auth.py::test_malformed_bearer_token_receives_401",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-07", "feature": "F017", "story": "E1-S4", "ac": "AC-2",
+          "description": "A subscriber-role request to a CSR-only endpoint receives HTTP 403.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth.py::test_subscriber_calling_csr_only_endpoint_receives_403",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-08", "feature": "F018", "story": "E1-S4", "ac": "AC-3",
+          "description": "A subscriber requesting another subscriber's data (ID mismatch) receives HTTP 403.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth.py::test_subscriber_requesting_another_subscribers_data_receives_403",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-09", "feature": "F019", "story": "E1-S4", "ac": "AC-4",
+          "description": "A CSR or admin principal accesses endpoints scoped to their own role without a 403 (test_csr_or_admin_can_access_their_scoped_endpoint_without_403 is parametrized over [Role.CSR, Role.ADMIN], collecting as 2 items); a subscriber accessing their own data succeeds; staff roles are not subject to subscriber ownership checks.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth.py::test_csr_or_admin_can_access_their_scoped_endpoint_without_403 tests/integration/test_auth.py::test_subscriber_requesting_own_data_succeeds tests/integration/test_auth.py::test_csr_and_admin_are_not_subject_to_subscriber_ownership_checks",
+          "expected": "4 passed"
+        },
+        {
+          "id": "grp-b-10", "feature": "F020", "story": "E1-S4", "ac": "AC-5",
+          "description": "An integration test exercises all four auth cases (401 x2, 403 x2, scoped-success x3-including-CSR/ADMIN-parametrization, own-data-success) against a running FastAPI TestClient — 8 collected items across 7 test functions, one of which is parametrized over 2 roles.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth.py",
+          "expected": "8 passed"
+        },
+        {
+          "id": "grp-b-11", "feature": "F021", "story": "E1-S5", "ac": "AC-1",
+          "description": "GET /health returns HTTP 200 with JSON body {\"status\": \"ok\"}.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_health.py::test_health_returns_200_with_ok_status_body",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-12", "feature": "F022", "story": "E1-S5", "ac": "AC-2",
+          "description": "Response latency for GET /health is under 1000ms.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_health.py::test_health_responds_within_one_second",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-13", "feature": "F023", "story": "E1-S5", "ac": "AC-3",
+          "description": "/health requires no authentication.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_health.py::test_health_succeeds_with_no_authorization_header_present",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-14", "feature": "F024", "story": "E1-S5", "ac": "AC-4",
+          "description": "/health succeeds on first call immediately after startup, no retries needed.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_health.py::test_health_succeeds_on_first_call_immediately_after_startup_completes",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-15", "feature": "F025", "story": "E2-S1", "ac": "AC-1",
+          "description": "Repository exposes create_subscriber, get_subscriber_by_id, get_subscriber_by_mobile backed by SQLite (round-trip and not-found paths).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_subscriber_repository.py::test_create_and_get_subscriber_by_id_round_trips tests/unit/test_subscriber_repository.py::test_get_subscriber_by_id_returns_none_when_not_found tests/unit/test_subscriber_repository.py::test_get_subscriber_by_mobile_finds_the_matching_row tests/unit/test_subscriber_repository.py::test_get_subscriber_by_mobile_returns_none_when_not_found",
+          "expected": "4 passed"
+        },
+        {
+          "id": "grp-b-16", "feature": "F026", "story": "E2-S1", "ac": "AC-2",
+          "description": "A partial unique index on (mobile_number) WHERE state='ACTIVE' exists and enforces at-most-one-ACTIVE at the DB level.",
+          "command": "cd backend && grep -n 'idx_subscriptions_active_mobile' src/app/repository/schema.sql && uv run pytest -q tests/unit/test_subscriber_repository.py::test_second_active_subscription_for_same_mobile_raises_integrity_error",
+          "expected": "grep finds the index definition; 1 passed"
+        },
+        {
+          "id": "grp-b-17", "feature": "F027", "story": "E2-S1", "ac": "AC-3",
+          "description": "dealer_master is seeded with >= 5 valid dealer codes plus the DEALER-FAIL sentinel on schema apply.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_dealer_repository.py::test_at_least_five_valid_dealer_codes_are_seeded tests/unit/test_dealer_repository.py::test_dealer_fail_sentinel_is_seeded_on_schema_apply tests/unit/test_dealer_repository.py::test_seeded_valid_dealers_are_active",
+          "expected": "3 passed"
+        },
+        {
+          "id": "grp-b-18", "feature": "F028", "story": "E2-S1", "ac": "AC-4",
+          "description": "Inserting a second ACTIVE subscription for the same mobile number raises a database integrity error; non-ACTIVE duplicates do not conflict.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_subscriber_repository.py::test_second_active_subscription_for_same_mobile_raises_integrity_error tests/unit/test_subscriber_repository.py::test_non_active_subscriptions_for_same_mobile_do_not_conflict",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-19", "feature": "F029", "story": "E2-S1", "ac": "AC-5",
+          "description": "subscriber_repository.py and dealer_repository.py import only from Types and Config.",
+          "command": "cd backend && grep -rnE '^(from|import)[[:space:]]+app\\.(service|api)' src/app/repository/subscriber_repository.py src/app/repository/dealer_repository.py || echo NONE_FOUND",
+          "expected": "NONE_FOUND"
+        },
+        {
+          "id": "grp-b-20", "feature": "F049", "story": "E3-S1", "ac": "AC-1",
+          "description": "Repository exposes create_plan_version, publish_plan_version, get_published_version, list_versions.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_repository.py",
+          "expected": "9 passed"
+        },
+        {
+          "id": "grp-b-21", "feature": "F050", "story": "E3-S1", "ac": "AC-2",
+          "description": "Update/delete against an already-published row raises at the repository/DB level; re-publishing an already-published version is rejected.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_repository.py::test_direct_update_of_a_published_versions_price_is_rejected tests/unit/test_plan_repository.py::test_direct_delete_of_a_plan_version_is_rejected tests/unit/test_plan_repository.py::test_republishing_an_already_published_version_is_rejected",
+          "expected": "3 passed"
+        },
+        {
+          "id": "grp-b-22", "feature": "F051", "story": "E3-S1", "ac": "AC-3",
+          "description": "list_versions returns all historical versions for a plan in ascending version-number order, none deleted.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_repository.py::test_list_versions_returns_all_versions_in_ascending_order",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-23", "feature": "F052", "story": "E3-S1", "ac": "AC-4",
+          "description": "Directly mutating a published plan version's price field fails.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_repository.py::test_direct_update_of_a_published_versions_price_is_rejected",
+          "expected": "1 passed (same test also serves as grp-b-21's first case)"
+        },
+        {
+          "id": "grp-b-24", "feature": "F067", "story": "E4-S1", "ac": "AC-1",
+          "description": "Repository exposes create_billing_record and list_billing_records_for_subscription; no update_billing_record/delete_billing_record function is defined.",
+          "command": "cd backend && grep -n 'def update_billing_record\\|def delete_billing_record' src/app/repository/billing_repository.py || echo NONE_FOUND",
+          "expected": "NONE_FOUND"
+        },
+        {
+          "id": "grp-b-25", "feature": "F068", "story": "E4-S1", "ac": "AC-2",
+          "description": "Monetary columns round-trip as exact Decimal, never float.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_billing_repository.py::test_monetary_columns_round_trip_as_exact_decimal",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-26", "feature": "F069", "story": "E4-S1", "ac": "AC-3",
+          "description": "A raw UPDATE or DELETE against billing_records fails via a DB trigger.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_billing_repository.py::test_direct_update_of_a_billing_record_is_rejected tests/unit/test_billing_repository.py::test_direct_delete_of_a_billing_record_is_rejected",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-27", "feature": "F070", "story": "E4-S1", "ac": "AC-4",
+          "description": "Two billing records for the same subscription both remain independently retrievable.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_billing_repository.py::test_two_billing_records_for_the_same_subscription_both_remain_retrievable",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-28", "feature": "F090", "story": "E5-S1", "ac": "AC-1",
+          "description": "Repository exposes append_state_transition and list_state_transitions_for_subscription; no update/delete function exists and raw UPDATE/DELETE is rejected.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_state_transition_repository.py::test_direct_update_of_a_state_transition_is_rejected tests/unit/test_state_transition_repository.py::test_direct_delete_of_a_state_transition_is_rejected",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-29", "feature": "F091", "story": "E5-S1", "ac": "AC-2",
+          "description": "Repository exposes create_port_out_event, get_active_port_out_event, close_port_out_event; closing updates status/closed_at without deleting the row.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_port_out_repository.py::test_close_port_out_event_sets_status_and_closed_at_without_deleting_the_row tests/unit/test_port_out_repository.py::test_get_active_port_out_event_returns_none_after_the_event_is_closed",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-30", "feature": "F092", "story": "E5-S1", "ac": "AC-3",
+          "description": "Three appended state transitions for one subscription all remain retrievable in chronological order.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_state_transition_repository.py::test_three_appended_transitions_remain_retrievable_in_chronological_order",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-31", "feature": "F093", "story": "E5-S1", "ac": "AC-4",
+          "description": "create_port_out_event stores requested_at and computes/stores cooling_period_end_at exactly 7 days later.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_port_out_repository.py::test_create_port_out_event_stores_requested_at_and_seven_day_cooling_end",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-32", "feature": "F112", "story": "E6-S1", "ac": "AC-1",
+          "description": "Repository exposes create_csr_override and list_csr_overrides_for_subscription; no update/delete function exists and raw UPDATE/DELETE is rejected.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_csr_override_repository.py::test_direct_update_of_a_csr_override_is_rejected tests/unit/test_csr_override_repository.py::test_direct_delete_of_a_csr_override_is_rejected",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-33", "feature": "F113", "story": "E6-S1", "ac": "AC-2",
+          "description": "Every CSROverride record stores a non-null actor, reason_code, and timestamp.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_csr_override_repository.py::test_every_override_has_non_null_actor_reason_code_and_timestamp",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-34", "feature": "F114", "story": "E6-S1", "ac": "AC-3",
+          "description": "Two overrides for the same subscription both remain independently retrievable.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_csr_override_repository.py::test_two_overrides_for_the_same_subscription_both_remain_retrievable",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-b-35", "feature": "F127", "story": "E7-S1", "ac": "AC-1",
+          "description": "Repository exposes activation_funnel_counts, monthly_churn_rate, plan_mix_distribution, arpu_trend.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_reporting_repository.py",
+          "expected": "11 passed"
+        },
+        {
+          "id": "grp-b-36", "feature": "F128", "story": "E7-S1", "ac": "AC-2",
+          "description": "activation_funnel_counts stages are monotonically non-increasing (each stage <= prior stage).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_reporting_repository.py::test_activation_funnel_counts_are_monotonically_non_increasing tests/unit/test_reporting_repository.py::test_activation_funnel_middle_stages_equal_activated_given_no_partial_signal",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-37", "feature": "F129", "story": "E7-S1", "ac": "AC-3",
+          "description": "monthly_churn_rate divides churned count by the active base at each month's start.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_reporting_repository.py::test_monthly_churn_rate_divides_churned_count_by_active_base_at_month_start tests/unit/test_reporting_repository.py::test_monthly_churn_rate_is_zero_when_active_base_at_month_start_is_zero",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-38", "feature": "F130", "story": "E7-S1", "ac": "AC-4",
+          "description": "All returned monetary aggregates (churn_rate, arpu) are Decimal, never float.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_reporting_repository.py::test_monthly_churn_rate_values_are_decimal tests/unit/test_reporting_repository.py::test_arpu_trend_averages_charges_total_per_month_as_decimal",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-b-39-full-suite", "feature": null, "story": "all Group B stories", "ac": "cross-cutting gate",
+          "description": "Full backend test suite, lint, and strict typecheck all clean together (regression gate covering Group A + Group B combined, not tied to a single AC).",
+          "command": "cd backend && uv run pytest -q && uv run ruff check . && uv run mypy src/",
+          "expected": "129 passed; ruff: All checks passed!; mypy: Success: no issues found in 41 source files"
+        },
+        {
+          "id": "grp-b-40-coverage", "feature": null, "story": "all Group B stories", "ac": "cross-cutting gate",
+          "description": "100% statement coverage across all backend source files touched through Group B.",
+          "command": "cd backend && uv run pytest -q --cov=app --cov-report=term-missing",
+          "expected": "TOTAL 100% (546 or more statements, 0 missing)"
+        }
+      ]
+    }
+  },
+  "note_for_evaluator": "Group B introduces the first API routes (E1-S4 auth deps, E1-S5 /health) but there is still no long-running server process to curl — E1-S4/E1-S5's integration tests use FastAPI's in-process TestClient (tests/integration/test_auth.py, tests/integration/test_health.py), which is equivalent evidence to a live HTTP call without requiring docker-compose or `uv run uvicorn` to be started at this per-group evaluation stage. api_checks/playwright_checks are intentionally empty for the same reason as Group A. Skip the Docker/health-check-reachability step and evaluate only contract.architecture_checks, including every test_checks entry. A PASS verdict requires all 40 test_checks entries to pass with no rationalization."
+}
