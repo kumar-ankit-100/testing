@@ -3,6 +3,10 @@
 Imports Types and Config only.
 """
 
+from app.repository.billing_repository import (
+    create_billing_record,
+    list_billing_records_for_subscription,
+)
 from app.repository.dealer_repository import get_dealer_by_code
 from app.repository.plan_repository import (
     create_plan_version,
@@ -26,6 +30,7 @@ from app.repository.user_repository import (
 
 __all__ = [
     "apply_schema",
+    "create_billing_record",
     "create_plan_version",
     "create_subscriber",
     "create_subscription",
@@ -37,6 +42,7 @@ __all__ = [
     "get_user_by_id",
     "get_user_by_mobile",
     "get_user_by_username",
+    "list_billing_records_for_subscription",
     "list_versions",
     "publish_plan_version",
 ]
