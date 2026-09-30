@@ -63,8 +63,8 @@
         <label for="mobile_number">Mobile number</label>
         <input id="mobile_number" name="mobile_number" type="tel" placeholder="9876543210" value="9876543210" required pattern="[0-9]{10}">
 
-        <label for="identity_proof_reference">Identity proof reference</label>
-        <input id="identity_proof_reference" name="identity_proof_reference" type="text" placeholder="AADHAAR-XXXX-1234" value="AADHAAR-XXXX-1234" required>
+        <label for="identity_proof_ref">Identity proof reference</label>
+        <input id="identity_proof_ref" name="identity_proof_ref" type="text" placeholder="AADHAAR-XXXX-1234" value="AADHAAR-XXXX-1234" required>
 
         <label for="plan_type">Plan type</label>
         <select id="plan_type" name="plan_type">
@@ -83,8 +83,10 @@
       <div class="row"><span class="k">Subscriber ID</span><span class="v" id="subscriberIdOut">SUB-2026-004821</span></div>
       <div class="row"><span class="k">Mobile number</span><span class="v" id="mobileOut">98•••••210</span></div>
       <div class="row"><span class="k">State</span><span class="v"><span class="status-pill pill-pending">PENDING_KYC</span></span></div>
-      <button class="btn btn-secondary" style="margin-top:14px" onclick="runActivation()">Check activation status</button>
-      <span class="api-tag">POST /api/subscribers/{id}/activate</span>
+      <label for="dealer_code" style="margin-top:14px">Dealer code</label>
+      <input id="dealer_code" name="dealer_code" type="text" placeholder="DLR-001" value="DLR-001">
+      <button class="btn btn-secondary" onclick="runActivation()">Submit activation</button>
+      <span class="api-tag">POST /api/subscribers/{id}/activate — body: {"dealer_code": "..."}</span>
     </section>
 
     <!-- STEP 3a: Activation success -->
