@@ -2365,5 +2365,133 @@
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null
+  },
+  {
+    "id": "F154",
+    "category": "security",
+    "story": "E1-S6",
+    "group": "F",
+    "description": "Valid seeded staff credentials (CSR/ADMIN) return HTTP 200 with an access_token whose claims carry that role and subject.",
+    "steps": [
+      "POST /api/auth/login with valid CSR/ADMIN credentials",
+      "Decode access_token",
+      "Assert role and subject claims match"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F155",
+    "category": "functional",
+    "story": "E1-S6",
+    "group": "F",
+    "description": "A subscriber mobile number with no prior registration returns HTTP 200 with a pre-registration token (subscriber_id: null).",
+    "steps": [
+      "POST /api/auth/login with an unregistered mobile_number",
+      "Assert response 200 with subscriber_id null"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F156",
+    "category": "security",
+    "story": "E1-S6",
+    "group": "F",
+    "description": "Invalid staff credentials (wrong password or unknown username) return HTTP 401 with the same generic UNAUTHENTICATED reason code in both cases (no user-enumeration signal).",
+    "steps": [
+      "POST /api/auth/login with a wrong password for a known user",
+      "POST /api/auth/login with an unknown username",
+      "Assert both return 401 with identical reason_code and message shape"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F157",
+    "category": "functional",
+    "story": "E1-S6",
+    "group": "F",
+    "description": "Exactly one seeded demo user exists for each of CSR, ADMIN, and DEALER roles after schema apply, with password_hash populated via a real hashing function, never plaintext.",
+    "steps": [
+      "Apply schema",
+      "Query users table for each role",
+      "Assert exactly one row per role with a non-plaintext password_hash"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F158",
+    "category": "security",
+    "story": "E1-S6",
+    "group": "F",
+    "description": "A login attempt, successful or failed, never logs the raw password or an unmasked mobile number.",
+    "steps": [
+      "Perform a successful login and a failed login",
+      "Capture emitted log lines",
+      "Assert no raw password appears and any mobile number is masked"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F159",
+    "category": "security",
+    "story": "E1-S6",
+    "group": "F",
+    "description": "A subscriber JWT issued by this endpoint for subscriber A is rejected with 403 when used against an endpoint scoped to subscriber B's data.",
+    "steps": [
+      "Log in as subscriber A via the real endpoint",
+      "Call an endpoint scoped to subscriber B's data with A's token",
+      "Assert 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F160",
+    "category": "ui",
+    "story": "E2-S5",
+    "group": "F",
+    "description": "A login page calls POST /api/auth/login and stores the returned token; registration/activation calls attach it as a bearer token.",
+    "steps": [
+      "Load the login page",
+      "Submit valid credentials",
+      "Assert the token is stored and subsequent API calls include it as a bearer token"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F161",
+    "category": "ui",
+    "story": "E2-S5",
+    "group": "F",
+    "description": "A role-based route guard redirects to the login page when no valid token is present, and blocks rendering a route scoped to a role the current token doesn't carry.",
+    "steps": [
+      "Navigate to a protected route with no token",
+      "Assert redirect to login",
+      "Navigate to a route scoped to a different role's token",
+      "Assert the route is blocked"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
   }
 ]
