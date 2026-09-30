@@ -28,6 +28,7 @@ def test_settings_falls_back_to_documented_defaults_when_env_unset(
         "JWT_SECRET_KEY",
         "JWT_ALGORITHM",
         "JWT_EXPIRY_MINUTES",
+        "MIN_TENURE_DAYS",
     ):
         monkeypatch.delenv(env_var, raising=False)
 
@@ -40,6 +41,7 @@ def test_settings_falls_back_to_documented_defaults_when_env_unset(
     assert settings.jwt_secret_key == "dev-only-insecure-secret-change-in-production"
     assert settings.jwt_algorithm == "HS256"
     assert settings.jwt_expiry_minutes == 60
+    assert settings.min_tenure_days == 90
 
 
 def test_settings_reads_overrides_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -50,6 +52,7 @@ def test_settings_reads_overrides_from_environment(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("JWT_SECRET_KEY", "integration-test-secret-that-is-at-least-32-bytes-long")
     monkeypatch.setenv("JWT_ALGORITHM", "HS256")
     monkeypatch.setenv("JWT_EXPIRY_MINUTES", "15")
+    monkeypatch.setenv("MIN_TENURE_DAYS", "30")
 
     settings = Settings(_env_file=None)
 
@@ -59,6 +62,7 @@ def test_settings_reads_overrides_from_environment(monkeypatch: pytest.MonkeyPat
     assert settings.dealer_fail_code == "DEALER-FAIL"
     assert settings.jwt_secret_key == "integration-test-secret-that-is-at-least-32-bytes-long"
     assert settings.jwt_expiry_minutes == 15
+    assert settings.min_tenure_days == 30
 
 
 def test_get_settings_returns_a_settings_instance() -> None:
