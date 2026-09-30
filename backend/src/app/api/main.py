@@ -1,4 +1,4 @@
-"""FastAPI application factory for TelcoLane (E1-S5, extended E3-S3).
+"""FastAPI application factory for TelcoLane (E1-S5, extended E3-S3, E2-S4).
 
 API layer — imports Types, Config, Repository, Service only.
 
@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from app.api.error_handlers import register_exception_handlers
 from app.api.routers.health_router import router as health_router
 from app.api.routers.plan_router import router as plan_router
+from app.api.routers.subscriber_router import router as subscriber_router
 from app.config.db import create_connection
 from app.config.settings import get_settings
 from app.repository.schema import apply_schema
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
     app.include_router(health_router)
     app.include_router(plan_router)
+    app.include_router(subscriber_router)
     return app
 
 
