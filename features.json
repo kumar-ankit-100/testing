@@ -156,5 +156,595 @@
     "last_evaluated": "2026-09-30T04:30:11Z",
     "failure_reason": null,
     "failure_layer": null
+  },
+  {
+    "id": "F011",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Logger emits each log entry as a single JSON object with at minimum timestamp, level, message keys.",
+    "steps": [
+      "Call logger.info('test event')",
+      "Capture the emitted line",
+      "Parse it as JSON and assert timestamp, level, message keys are present"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F012",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "A logged mobile number is masked to show only the last 4 digits (e.g., ******7890); the full unmasked number never appears in the emitted JSON.",
+    "steps": [
+      "Log an event with mobile_number='9876547890'",
+      "Capture the emitted JSON line",
+      "Assert the raw number is absent and a masked form ending in 7890 is present"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F013",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "A logged Aadhaar reference and PAN reference are masked using the same partial-reveal rule and never appear unmasked in output.",
+    "steps": [
+      "Log an event containing an aadhaar_ref and a pan_ref value",
+      "Capture the emitted JSON line",
+      "Assert neither raw value appears as a substring"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F014",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "A unit test captures log output for a payload containing all three PII fields and asserts none of the raw values are present as substrings of the emitted JSON.",
+    "steps": [
+      "Log one event containing mobile_number, aadhaar_ref, and pan_ref together",
+      "Assert none of the three raw values appear in the captured output"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F015",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Logger module imports only from Types and Config.",
+    "steps": [
+      "Run grep -rn 'from.*repository|from.*api|from.*ui' on the logger module",
+      "Assert no matches are found"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F016",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "Every non-health API route requires an authenticated principal with a role; unauthenticated requests receive HTTP 401.",
+    "steps": [
+      "Call a protected route with no Authorization header",
+      "Assert response status is 401"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F017",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "A subscriber-role request to a CSR-only or admin-only endpoint receives HTTP 403.",
+    "steps": [
+      "Authenticate as a subscriber",
+      "Call an admin-only endpoint",
+      "Assert response status is 403"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F018",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "A subscriber requesting another subscriber's subscription data (by ID mismatch) receives HTTP 403.",
+    "steps": [
+      "Authenticate as subscriber A",
+      "Request subscriber B's subscription resource",
+      "Assert response status is 403"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F019",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "A CSR or admin principal can access endpoints scoped to their own role without a 403.",
+    "steps": [
+      "Authenticate as CSR",
+      "Call a CSR-scoped endpoint",
+      "Assert response status is not 403"
+    ],
+    "passes": false,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": "test_checks grp-b-09 (cd backend && uv run pytest -q tests/integration/test_auth.py::test_csr_or_admin_can_access_their_scoped_endpoint_without_403 tests/integration/test_auth.py::test_subscriber_requesting_own_data_succeeds tests/integration/test_auth.py::test_csr_and_admin_are_not_subject_to_subscriber_ownership_checks) returned '4 passed', contract expected '3 passed'. Root cause: test_csr_or_admin_can_access_their_scoped_endpoint_without_403 is @pytest.mark.parametrize('role', [Role.CSR, Role.ADMIN]) (backend/tests/integration/test_auth.py:135-136), so selecting it by bare function name collects 2 test items instead of 1. All 4 collected tests pass with zero failures -- the underlying AC-4 behavior is correct; this is a test-count mismatch against the sprint contract's expected string, not a functional defect.",
+    "failure_layer": "api"
+  },
+  {
+    "id": "F020",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "An integration test exercises all four cases above against a running test client.",
+    "steps": [
+      "Run an integration test suite covering unauthenticated, wrong-role, cross-subscriber, and correct-role cases",
+      "Assert all four expected outcomes"
+    ],
+    "passes": false,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": "test_checks grp-b-10 (cd backend && uv run pytest -q tests/integration/test_auth.py) returned '8 passed', contract expected '7 passed'. Same root cause as F019/grp-b-09: test_csr_or_admin_can_access_their_scoped_endpoint_without_403 is parametrized over [Role.CSR, Role.ADMIN], so the file collects 8 test items, not 7. All 8 pass with zero failures; confirmed consistent with the full-suite run (grp-b-39: exactly 129 passed, matching the contract's own aggregate expectation) -- this is a test-count mismatch against the sprint contract's expected string, not a functional defect.",
+    "failure_layer": "api"
+  },
+  {
+    "id": "F021",
+    "category": "functional",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "GET /health returns HTTP 200 with a JSON body containing a status: 'ok' field.",
+    "steps": [
+      "Call GET /health",
+      "Assert response status is 200",
+      "Assert response body contains status == 'ok'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F022",
+    "category": "performance",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "A test measures response latency and asserts it is under 1000ms.",
+    "steps": [
+      "Time a call to GET /health",
+      "Assert elapsed time < 1000ms"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F023",
+    "category": "functional",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "/health requires no authentication.",
+    "steps": [
+      "Call GET /health with no Authorization header",
+      "Assert response status is 200, not 401"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F024",
+    "category": "performance",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "A test starts the app and calls /health immediately after startup completes, asserting success without retries beyond the documented backoff policy.",
+    "steps": [
+      "Start the application",
+      "Call GET /health immediately after startup signal",
+      "Assert 200 is returned within the documented retry/backoff budget"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F025",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Repository exposes create_subscriber, get_subscriber_by_id, and get_subscriber_by_mobile functions backed by SQLite.",
+    "steps": [
+      "Call create_subscriber with valid data",
+      "Call get_subscriber_by_id and get_subscriber_by_mobile",
+      "Assert both return the same created record"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F026",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "A partial unique index exists on (mobile_number) restricted to state=ACTIVE, enforcing at most one ACTIVE subscription per mobile number at the database level.",
+    "steps": [
+      "Inspect the SQLite schema for the partial unique index",
+      "Assert the index expression is restricted to state='ACTIVE'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F027",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "DealerMaster table is seeded with at least 5 valid dealer codes plus the DEALER-FAIL sentinel code on application startup/migration.",
+    "steps": [
+      "Run the migration/seed step",
+      "Query the DealerMaster table",
+      "Assert at least 5 valid codes and the DEALER-FAIL sentinel are present"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F028",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "A unit test inserts two subscriptions with the same mobile number both attempting ACTIVE state and asserts the second raises a database integrity error.",
+    "steps": [
+      "Insert subscription 1 with mobile X in ACTIVE state",
+      "Attempt to insert subscription 2 with mobile X in ACTIVE state",
+      "Assert an IntegrityError is raised on the second insert"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F029",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Repository module imports only from Types and Config.",
+    "steps": [
+      "Run grep -rn 'from.*service|from.*api|from.*ui' on the repository module",
+      "Assert no matches are found"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F049",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Repository exposes create_plan_version, publish_plan_version, get_published_version, and list_versions functions.",
+    "steps": [
+      "Call each of the four functions against a test DB",
+      "Assert each returns the expected shape without error"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F050",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Calling any update/delete operation against a row already marked published=true raises an error at the repository level (no UPDATE statement executed against published rows).",
+    "steps": [
+      "Publish a plan version",
+      "Attempt to call an update function against that version",
+      "Assert an error is raised and no UPDATE was executed"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F051",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "list_versions returns all historical versions for a plan in ascending version-number order, none of them deleted.",
+    "steps": [
+      "Create 3 versions of a plan across time",
+      "Call list_versions",
+      "Assert all 3 are returned in ascending version order"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F052",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "A unit test attempts to mutate a published plan version's price field directly and asserts it fails.",
+    "steps": [
+      "Publish a version with price P",
+      "Attempt to directly mutate its price field",
+      "Assert the operation fails and price remains P"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F067",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "Repository exposes create_billing_record and list_billing_records_for_subscription; no update_billing_record or delete_billing_record function exists.",
+    "steps": [
+      "Inspect the repository module's public functions",
+      "Assert create/list exist and no update/delete function is defined"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F068",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "Monetary columns are stored and retrieved as Decimal, never float, verified by a unit test comparing exact Decimal equality after round-trip.",
+    "steps": [
+      "Create a billing record with a Decimal amount",
+      "Fetch it back",
+      "Assert exact Decimal equality (no float rounding drift)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F069",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "Attempting to run a raw UPDATE or DELETE against the billing_records table (e.g., via a direct SQL statement in a test) either fails via a DB constraint/trigger or is asserted absent from the codebase.",
+    "steps": [
+      "Search the codebase for UPDATE/DELETE statements against billing_records",
+      "Assert none exist outside of test fixtures/teardown"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F070",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "A unit test creates two billing records for the same subscription and asserts both remain retrievable (no overwrite).",
+    "steps": [
+      "Create billing record 1 and billing record 2 for the same subscription",
+      "Call list_billing_records_for_subscription",
+      "Assert both records are present"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F090",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "Repository exposes append_state_transition and list_state_transitions_for_subscription; no update/delete function exists for state transitions.",
+    "steps": [
+      "Inspect the repository module's public functions",
+      "Assert append/list exist and no update/delete function is defined"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F091",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "Repository exposes create_port_out_event, get_active_port_out_event, and close_port_out_event (closing sets an end status, it does not delete the row).",
+    "steps": [
+      "Create a port-out event, fetch it as active, then close it",
+      "Assert the row still exists with an end status set, not deleted"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F092",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "A unit test appends 3 state transitions for one subscription and asserts all 3 remain retrievable in chronological order.",
+    "steps": [
+      "Append 3 state transitions for one subscription",
+      "Call list_state_transitions_for_subscription",
+      "Assert all 3 are returned in chronological order"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F093",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "create_port_out_event stores the request timestamp and computes/stores the cooling-period end timestamp exactly 7 days later.",
+    "steps": [
+      "Create a port-out event at timestamp T",
+      "Assert the stored cooling-period end equals T + 7 days exactly"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F112",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "B",
+    "description": "Repository exposes create_csr_override and list_csr_overrides_for_subscription; no update/delete function exists.",
+    "steps": [
+      "Inspect the repository module's public functions",
+      "Assert create/list exist and no update/delete function is defined"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F113",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "B",
+    "description": "Every CSROverride record stores a non-null actor (CSR user ID), a non-null timestamp, and a non-null reason code.",
+    "steps": [
+      "Create a CSROverride record",
+      "Assert actor, timestamp, and reason_code are all non-null on the stored row"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F114",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "B",
+    "description": "A unit test creates two overrides for the same subscription and asserts both remain retrievable independently.",
+    "steps": [
+      "Create override 1 and override 2 for the same subscription",
+      "Call list_csr_overrides_for_subscription",
+      "Assert both are present and independent"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F127",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "Repository exposes activation_funnel_counts, monthly_churn_rate, plan_mix_distribution, and arpu_trend query functions.",
+    "steps": [
+      "Call each of the four functions against a test DB with seeded data",
+      "Assert each returns without error and in the expected shape"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F128",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "activation_funnel_counts returns counts per funnel stage (registered, KYC-passed, dealer-passed, MNP-passed, activated) that sum consistently (each stage count <= the prior stage count).",
+    "steps": [
+      "Seed data covering all funnel stages",
+      "Call activation_funnel_counts",
+      "Assert each stage's count is <= the prior stage's count"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F129",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "monthly_churn_rate returns one value per calendar month derived from PORTED_OUT/TERMINATED transitions in that month divided by active base at month start.",
+    "steps": [
+      "Seed PORTED_OUT/TERMINATED transitions across two calendar months",
+      "Call monthly_churn_rate",
+      "Assert one value per month matching the expected ratio"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F130",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "All returned monetary aggregates (e.g., ARPU) are Decimal, never float.",
+    "steps": [
+      "Call arpu_trend",
+      "Assert every returned monetary value's type is Decimal"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:16:09Z",
+    "failure_reason": null,
+    "failure_layer": null
   }
 ]
