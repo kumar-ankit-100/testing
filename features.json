@@ -1138,5 +1138,359 @@
     "last_evaluated": "2026-09-30T16:55:32Z",
     "failure_reason": null,
     "failure_layer": null
+  },
+  {
+    "id": "F040",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/register with valid input returns HTTP 201 with the new subscriber ID and state PENDING_KYC.",
+    "steps": [
+      "POST /api/subscribers/register with valid payload",
+      "Assert response status is 201",
+      "Assert body contains subscriber_id and state == 'PENDING_KYC'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F041",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/{id}/activate with all stub flags passing returns HTTP 200 with state ACTIVE.",
+    "steps": [
+      "POST /api/subscribers/{id}/activate with all-pass flags",
+      "Assert response status is 200",
+      "Assert body state == 'ACTIVE'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F042",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/{id}/activate with a failing stub flag returns HTTP 422 with a machine-readable reason code (KYC_UNVERIFIED, DEALER_INVALID, or MNP_FAILED).",
+    "steps": [
+      "POST /api/subscribers/{id}/activate with a failing flag",
+      "Assert response status is 422",
+      "Assert body contains one of the three documented reason codes"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F043",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/{id}/activate on an already-ACTIVE subscriber returns HTTP 409.",
+    "steps": [
+      "Activate a subscriber successfully",
+      "POST /activate again on the same subscriber",
+      "Assert response status is 409"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F044",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "All requests/responses are validated against typed request/response models (no untyped dicts).",
+    "steps": [
+      "Inspect the route handler signatures",
+      "Assert request and response bodies use typed Pydantic models, not raw dict"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F063",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "UI lists all plan versions for a plan with a visible published/draft badge per version.",
+    "steps": [
+      "Load the plan catalog screen",
+      "Assert each listed version shows a published or draft badge"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F064",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "Admin can submit a form to create a new draft version from the current published version's fields.",
+    "steps": [
+      "Click 'create new version'",
+      "Assert the form is pre-filled from the published version and submits successfully"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F065",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "Attempting to edit a field on a published version in the UI is disabled/blocked, with an inline message directing the admin to create a new version instead.",
+    "steps": [
+      "Attempt to edit a field on a published version row",
+      "Assert the input is disabled and an inline message appears"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F066",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "Publishing a draft from the UI updates the visible published badge without a full page reload error.",
+    "steps": [
+      "Click 'publish' on a draft version",
+      "Assert the badge updates to 'published' without a page error"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F076",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A plan-change request on a subscription younger than the configured minimum-tenure period is rejected with reason code MIN_TENURE_NOT_MET and no BillingRecord is created.",
+    "steps": [
+      "Create a subscription younger than the minimum-tenure period",
+      "Call commit_plan_change()",
+      "Assert reason code MIN_TENURE_NOT_MET and no BillingRecord was created"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F077",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A plan-change request on a SUSPENDED subscription is rejected with a visible reason code and no BillingRecord is created.",
+    "steps": [
+      "Suspend a subscription",
+      "Call commit_plan_change()",
+      "Assert rejection with a visible reason code and no BillingRecord created"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F078",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A preview call returns the computed pro-rata amount without persisting a BillingRecord or changing the subscription's plan.",
+    "steps": [
+      "Call preview_plan_change() on an eligible subscription",
+      "Assert the pro-rata amount is returned",
+      "Assert no BillingRecord exists and the subscription's plan is unchanged"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F079",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A commit call on an eligible ACTIVE subscription past minimum tenure updates the subscription's current plan and persists exactly one new BillingRecord matching the previewed amount.",
+    "steps": [
+      "Preview a plan change",
+      "Commit the same plan change",
+      "Assert the plan is updated and exactly one matching BillingRecord was created"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F080",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "Two consecutive commits for the same subscription each produce their own independent BillingRecord (append-only), and the prior record is never modified.",
+    "steps": [
+      "Commit a plan change",
+      "Commit a second plan change on the same subscription",
+      "Assert two independent BillingRecords exist and the first is unchanged"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F094",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Suspending an ACTIVE subscription transitions it to SUSPENDED and appends a StateTransition record.",
+    "steps": [
+      "Call suspend() on an ACTIVE subscription",
+      "Assert state is SUSPENDED and a StateTransition record was appended"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F095",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Resuming a SUSPENDED subscription transitions it back to ACTIVE and appends a StateTransition record.",
+    "steps": [
+      "Call resume() on a SUSPENDED subscription",
+      "Assert state is ACTIVE and a StateTransition record was appended"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F096",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Attempting to suspend a subscription that is not ACTIVE (e.g., already SUSPENDED or PENDING_KYC) raises InvalidSubscriberStateException.",
+    "steps": [
+      "Call suspend() on a PENDING_KYC subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F097",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Attempting to resume a subscription that is not SUSPENDED raises InvalidSubscriberStateException.",
+    "steps": [
+      "Call resume() on an ACTIVE subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F098",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Requesting port-out on an ACTIVE subscription transitions it to PORT_OUT_REQUESTED, creates a PortOutEvent, and appends a StateTransition record.",
+    "steps": [
+      "Call request_port_out() on an ACTIVE subscription",
+      "Assert state is PORT_OUT_REQUESTED, a PortOutEvent exists, and a StateTransition was appended"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F099",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Cancelling a port-out request within the 7-day window returns the subscription to ACTIVE and closes the PortOutEvent with status CANCELLED_WITHIN_WINDOW.",
+    "steps": [
+      "Request port-out, then cancel within 7 days",
+      "Assert state returns to ACTIVE and the PortOutEvent status is CANCELLED_WITHIN_WINDOW"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F100",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Finalizing a port-out request after the 7-day window has elapsed transitions the subscription to PORTED_OUT and closes the PortOutEvent with status FINALIZED.",
+    "steps": [
+      "Request port-out, advance time past 7 days, then finalize",
+      "Assert state is PORTED_OUT and the PortOutEvent status is FINALIZED"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F101",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Attempting to finalize a port-out request before the 7-day window has elapsed is rejected with a specific reason code.",
+    "steps": [
+      "Request port-out, then finalize before 7 days have elapsed",
+      "Assert rejection with a specific reason code (e.g., COOLING_PERIOD_ACTIVE)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F102",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Requesting port-out on a subscription that is not ACTIVE raises InvalidSubscriberStateException.",
+    "steps": [
+      "Call request_port_out() on a SUSPENDED subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T17:30:59Z",
+    "failure_reason": null,
+    "failure_layer": null
   }
 ]
