@@ -7,10 +7,14 @@ domain exceptions are introduced (component-map.md cross-cutting notes).
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.types.enums import ReasonCode
+from app.types.enums import ReasonCode, SubscriberState
 from app.types.exceptions import (
+    ActivationRejectedError,
     AuthenticationError,
     AuthorizationError,
+    DuplicateActiveSubscriptionError,
+    InvalidMobileNumberError,
+    InvalidSubscriberStateException,
     PlanVersionImmutableError,
 )
 
@@ -35,6 +39,35 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request, exc: PlanVersionImmutableError
     ) -> JSONResponse:
         return _error_response(409, ReasonCode.PLAN_VERSION_IMMUTABLE, str(exc))
+
+    @app.exception_handler(InvalidMobileNumberError)
+    async def _handle_invalid_mobile_number_error(
+        _request: Request, exc: InvalidMobileNumberError
+    ) -> JSONResponse:
+        return _error_response(422, ReasonCode.VALIDATION_ERROR, str(exc))
+
+    @app.exception_handler(DuplicateActiveSubscriptionError)
+    async def _handle_duplicate_active_subscription_error(
+        _request: Request, exc: DuplicateActiveSubscriptionError
+    ) -> JSONResponse:
+        return _error_response(409, ReasonCode.DUPLICATE_ACTIVE_MOBILE, str(exc))
+
+    @app.exception_handler(ActivationRejectedError)
+    async def _handle_activation_rejected_error(
+        _request: Request, exc: ActivationRejectedError
+    ) -> JSONResponse:
+        return _error_response(422, exc.reason_code, str(exc))
+
+    @app.exception_handler(InvalidSubscriberStateException)
+    async def _handle_invalid_subscriber_state_exception(
+        _request: Request, exc: InvalidSubscriberStateException
+    ) -> JSONResponse:
+        reason_code = (
+            ReasonCode.ALREADY_ACTIVE
+            if exc.from_state == SubscriberState.ACTIVE
+            else ReasonCode.INVALID_STATE_TRANSITION
+        )
+        return _error_response(409, reason_code, str(exc))
 
 
 def _error_response(status_code: int, reason_code: ReasonCode, message: str) -> JSONResponse:
