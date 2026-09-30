@@ -3,7 +3,7 @@
 Types layer — zero imports from Config, Repository, Service, API, or UI.
 """
 
-from app.types.enums import SubscriberState
+from app.types.enums import ReasonCode, SubscriberState
 
 
 class InvalidSubscriberStateException(Exception):
@@ -61,3 +61,16 @@ class PlanVersionImmutableError(Exception):
             f"Plan version {plan_version_id!r} is published and cannot be modified; "
             "create a new version instead"
         )
+
+
+class ActivationRejectedError(Exception):
+    """Raised when an activation attempt fails a rule check (E2-S3).
+
+    Carries the specific machine-readable reason_code (KYC_UNVERIFIED,
+    DEALER_INVALID, or MNP_FAILED) so a single exception type can map to
+    HTTP 422 at the API layer without three separate exception classes.
+    """
+
+    def __init__(self, reason_code: ReasonCode) -> None:
+        self.reason_code = reason_code
+        super().__init__(f"Activation rejected: {reason_code.value}")
