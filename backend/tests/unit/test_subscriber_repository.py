@@ -8,6 +8,7 @@ import pytest
 from app.repository.subscriber_repository import (
     create_subscriber,
     create_subscription,
+    get_active_subscription_by_mobile,
     get_subscriber_by_id,
     get_subscriber_by_mobile,
 )
@@ -157,3 +158,69 @@ def test_non_active_subscriptions_for_same_mobile_do_not_conflict(
         (subscriber.mobile_number,),
     ).fetchone()
     assert count_row[0] == 2
+
+
+def test_get_active_subscription_by_mobile_finds_the_active_row(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0006-4e11-9f22-333344445555", "9876540006")
+    create_subscriber(sqlite_connection, subscriber)
+    active = _build_subscription(
+        "c2b3d4e5-0006-4f22-8a33-444455556666",
+        subscriber.subscriber_id,
+        subscriber.mobile_number,
+        SubscriberState.ACTIVE,
+    )
+    create_subscription(sqlite_connection, active)
+
+    found = get_active_subscription_by_mobile(sqlite_connection, subscriber.mobile_number)
+
+    assert found == active
+
+
+def test_get_active_subscription_by_mobile_returns_none_when_only_pending(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0007-4e11-9f22-333344445555", "9876540007")
+    create_subscriber(sqlite_connection, subscriber)
+    pending = _build_subscription(
+        "c2b3d4e5-0007-4f22-8a33-444455556666",
+        subscriber.subscriber_id,
+        subscriber.mobile_number,
+        SubscriberState.PENDING_KYC,
+    )
+    create_subscription(sqlite_connection, pending)
+
+    assert get_active_subscription_by_mobile(sqlite_connection, subscriber.mobile_number) is None
+
+
+def test_get_active_subscription_by_mobile_returns_none_when_no_subscription_exists(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    assert get_active_subscription_by_mobile(sqlite_connection, "9000000009") is None
+
+
+def test_get_active_subscription_by_mobile_round_trips_a_real_activated_at(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0008-4e11-9f22-333344445555", "9876540008")
+    create_subscriber(sqlite_connection, subscriber)
+    active = Subscription(
+        subscription_id="c2b3d4e5-0008-4f22-8a33-444455556666",
+        subscriber_id=subscriber.subscriber_id,
+        mobile_number=subscriber.mobile_number,
+        plan_type=PlanType.POSTPAID,
+        state=SubscriberState.ACTIVE,
+        current_plan_version_id="PLAN-5G-v1",
+        dealer_code="DLR-BLR-001",
+        created_at=_NOW,
+        activated_at=_NOW,
+        updated_at=_NOW,
+    )
+    create_subscription(sqlite_connection, active)
+
+    found = get_active_subscription_by_mobile(sqlite_connection, subscriber.mobile_number)
+
+    assert found == active
+    assert found is not None
+    assert found.activated_at == _NOW
