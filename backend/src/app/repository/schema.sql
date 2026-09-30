@@ -129,3 +129,45 @@ BEFORE DELETE ON billing_records
 BEGIN
     SELECT RAISE(ABORT, 'billing_records: rows are append-only, delete is not permitted');
 END;
+
+-- E5-S1: state_transitions — fully append-only, same shape as billing_records.
+CREATE TABLE IF NOT EXISTS state_transitions (
+    transition_id TEXT PRIMARY KEY,
+    subscription_id TEXT NOT NULL REFERENCES subscriptions (subscription_id),
+    from_state TEXT NOT NULL,
+    to_state TEXT NOT NULL,
+    reason_code TEXT,
+    actor TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_state_transitions_no_update
+BEFORE UPDATE ON state_transitions
+BEGIN
+    SELECT RAISE(ABORT, 'state_transitions: rows are append-only, update is not permitted');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_state_transitions_no_delete
+BEFORE DELETE ON state_transitions
+BEGIN
+    SELECT RAISE(ABORT, 'state_transitions: rows are append-only, delete is not permitted');
+END;
+
+-- E5-S1: port_out_events — append-only in the sense that rows are never
+-- deleted, but UPDATE is allowed once (close_port_out_event sets an end
+-- status + closed_at) — so only a DELETE trigger is added, not an UPDATE
+-- one (system-design.md 5.2 / E5-S1 AC-2).
+CREATE TABLE IF NOT EXISTS port_out_events (
+    port_out_event_id TEXT PRIMARY KEY,
+    subscription_id TEXT NOT NULL REFERENCES subscriptions (subscription_id),
+    requested_at TEXT NOT NULL,
+    cooling_period_end_at TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('PENDING', 'CANCELLED_WITHIN_WINDOW', 'FINALIZED')),
+    closed_at TEXT
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_port_out_events_no_delete
+BEFORE DELETE ON port_out_events
+BEGIN
+    SELECT RAISE(ABORT, 'port_out_events: rows are never deleted, only closed');
+END;
