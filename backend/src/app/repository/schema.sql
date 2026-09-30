@@ -71,3 +71,34 @@ INSERT OR IGNORE INTO dealer_master (dealer_code, dealer_name, active) VALUES
     ('DLR-CHN-004', 'Chennai T Nagar Store', 1),
     ('DLR-HYD-005', 'Hyderabad Gachibowli Kiosk', 1),
     ('DEALER-FAIL', 'Sentinel dealer code — always rejected by design', 0);
+
+-- E3-S1: plan_versions — append-only, immutable once published.
+-- The only mutator exposed by plan_repository.py is publish_plan_version
+-- (draft -> published, once); no update_plan_version/delete_plan_version
+-- function exists at all (system-design.md 5.2). These triggers are
+-- defense-in-depth against a raw SQL bypass of that repository boundary.
+CREATE TABLE IF NOT EXISTS plan_versions (
+    plan_version_id TEXT PRIMARY KEY,
+    plan_id TEXT NOT NULL,
+    plan_name TEXT NOT NULL,
+    plan_type TEXT NOT NULL CHECK (plan_type IN ('PREPAID', 'POSTPAID')),
+    version_number INTEGER NOT NULL,
+    price TEXT NOT NULL,
+    terms TEXT NOT NULL,
+    published INTEGER NOT NULL DEFAULT 0 CHECK (published IN (0, 1)),
+    created_at TEXT NOT NULL,
+    published_at TEXT
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_plan_versions_immutable_once_published
+BEFORE UPDATE ON plan_versions
+WHEN OLD.published = 1
+BEGIN
+    SELECT RAISE(ABORT, 'plan_versions: cannot modify a published plan version');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_plan_versions_no_delete
+BEFORE DELETE ON plan_versions
+BEGIN
+    SELECT RAISE(ABORT, 'plan_versions: rows are append-only, delete is not permitted');
+END;
