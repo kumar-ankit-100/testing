@@ -14,7 +14,9 @@ from app.repository.csr_override_repository import (
 from app.repository.dealer_repository import get_dealer_by_code
 from app.repository.plan_repository import (
     create_plan_version,
+    get_plan_version_by_id,
     get_published_version,
+    list_all_plan_versions,
     list_versions,
     publish_plan_version,
     update_draft_plan_version,
@@ -68,6 +70,7 @@ __all__ = [
     "get_active_port_out_event",
     "get_active_subscription_by_mobile",
     "get_dealer_by_code",
+    "get_plan_version_by_id",
     "get_published_version",
     "get_subscriber_by_id",
     "get_subscriber_by_mobile",
@@ -75,6 +78,7 @@ __all__ = [
     "get_user_by_id",
     "get_user_by_mobile",
     "get_user_by_username",
+    "list_all_plan_versions",
     "list_billing_records_for_subscription",
     "list_csr_overrides_for_subscription",
     "list_state_transitions_for_subscription",
