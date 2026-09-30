@@ -965,5 +965,178 @@
     "last_evaluated": "2026-09-30T14:42:46Z",
     "failure_reason": null,
     "failure_layer": null
+  },
+  {
+    "id": "F034",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with KYC-verified flag, a valid dealer code, and MNP-success flag transitions the subscription to ACTIVE and appends a StateTransition record.",
+    "steps": [
+      "Call activate() with all-pass stub flags",
+      "Assert the subscription state is ACTIVE",
+      "Assert a StateTransition record was appended for PENDING_KYC -> ACTIVE"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F035",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with an unverified KYC flag is rejected with reason code KYC_UNVERIFIED and the subscription remains PENDING_KYC.",
+    "steps": [
+      "Call activate() with kyc=not-verified",
+      "Assert the raised/returned error reason code is KYC_UNVERIFIED",
+      "Assert the subscription state is still PENDING_KYC"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F036",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with dealer code DEALER-FAIL is rejected with reason code DEALER_INVALID and the subscription remains PENDING_KYC.",
+    "steps": [
+      "Call activate() with dealer_code='DEALER-FAIL'",
+      "Assert the reason code is DEALER_INVALID",
+      "Assert the subscription state is still PENDING_KYC"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F037",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with the MNP-fail flag is rejected with reason code MNP_FAILED and the subscription remains PENDING_KYC.",
+    "steps": [
+      "Call activate() with mnp=fail",
+      "Assert the reason code is MNP_FAILED",
+      "Assert the subscription state is still PENDING_KYC"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F038",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Attempting to activate a subscription that is not in PENDING_KYC (e.g., already ACTIVE) raises InvalidSubscriberStateException.",
+    "steps": [
+      "Activate a subscription successfully once",
+      "Call activate() again on the now-ACTIVE subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F039",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "A test attempts to activate two registrations for the same mobile number concurrently/sequentially and asserts only one reaches ACTIVE (double-activation race, NFR-07).",
+    "steps": [
+      "Register two subscriptions for the same mobile number",
+      "Attempt to activate both",
+      "Assert exactly one ends ACTIVE and the other fails with a duplicate/integrity error"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F058",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "POST /api/admin/plans (admin role) creates a draft plan version and returns HTTP 201.",
+    "steps": [
+      "POST /api/admin/plans as admin with valid payload",
+      "Assert response status is 201"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F059",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "POST /api/admin/plans/{id}/publish publishes a draft and returns HTTP 200 with published: true.",
+    "steps": [
+      "POST /api/admin/plans/{id}/publish",
+      "Assert response status is 200 and body.published == true"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F060",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "PUT /api/admin/plans/{id} on an already-published version returns HTTP 409 with an immutability error message.",
+    "steps": [
+      "Publish a version",
+      "PUT /api/admin/plans/{id} attempting to edit it",
+      "Assert response status is 409"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F061",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "GET /api/admin/plans returns the full version history including superseded versions.",
+    "steps": [
+      "Create and publish multiple versions",
+      "GET /api/admin/plans",
+      "Assert the response includes every version, not just the latest"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F062",
+    "category": "security",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "A non-admin principal calling any of the above endpoints receives HTTP 403.",
+    "steps": [
+      "Call each endpoint as a non-admin principal",
+      "Assert response status is 403 in every case"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-09-30T16:55:32Z",
+    "failure_reason": null,
+    "failure_layer": null
   }
 ]

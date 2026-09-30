@@ -429,8 +429,34 @@ what_was_built (Group D):
     11 new integration tests for the plan API (all 5 ACs + 404-on-unknown-id for both routes
     that need it) + 2 for the new error handler + 2 for get_db_connection.
 
-next_action: coordinator to independently re-verify (full backend suite + ruff + mypy) before
-  merging feat/group-d-activation-and-plan-api into develop; then write sprint-contracts/group-d.json
-  and hand off to evaluator. After Group D evaluation, Group E (E2-S4 registration/activation API,
-  E3-S4 admin plan catalog UI, E4-S3 plan change service, E5-S2 suspend/resume service, E5-S3
-  port-out service) is next per specs/stories/dependency-graph.md.
+=== Session 6 ===
+date: 2026-09-30
+mode: evaluator
+groups_completed: [A, B, C, D]
+groups_remaining: [E, F, G, H]
+current_group: none (D closed out)
+sprint_contract: sprint-contracts/group-d.json (11 features + 3 cross-cutting gates, 14 test_checks)
+
+evaluator_result (Group D):
+  Coordinator independently re-verified before writing the contract (196 passed, ruff/mypy
+  clean, 100% coverage 823 statements, no stray DB files; spot-checked activation_service.py's
+  FSM-check-before-rules ordering, the real register_exception_handlers wiring bug fix in
+  main.py, the double-activation race handling via IntegrityError, plan_router.py's admin-gated
+  endpoints, price-as-string serialization, and the test_health.py isolation fix — all matched
+  the generator's claims exactly). Caught one parametrized test (test_non_admin_receives_403_
+  for_create_and_list, 2 items) via collect-only before writing sprint-contracts/group-d.json.
+  Evaluator VERDICT: PASS on first pass — 14/14 test_checks (independently re-verified the
+  parametrize count itself rather than trusting the contract's note), all 3 required
+  architecture_checks (layering, typing, folder_structure; env_vars/migrations correctly N/A).
+  features.json (root) grew from 62 to 73 entries, all passing. Coordinator independently
+  re-ran the full suite + coverage + stray-DB-file check after the evaluator's report — matched
+  exactly.
+
+  Note: this /implement run hit a transient rate-limit error mid-task (right as it was about to
+  commit E3-S3) but recovered and actually completed — coordinator verified the claimed commits
+  existed in git log before trusting the completion report, given the mismatch between the
+  "failed" task-notification and the full success report that followed.
+
+next_action: Group E (E2-S4 registration/activation API, E3-S4 admin plan catalog UI, E4-S3
+  plan change service, E5-S2 suspend/resume service, E5-S3 port-out service) per
+  specs/stories/dependency-graph.md. First group with frontend work (E3-S4).
