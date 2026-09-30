@@ -1,0 +1,132 @@
+{
+  "group": "C",
+  "stories": ["E2-S2", "E3-S2", "E4-S2"],
+  "features": [
+    "F030", "F031", "F032", "F033",
+    "F053", "F054", "F055", "F056", "F057",
+    "F071", "F072", "F073", "F074", "F075"
+  ],
+  "contract": {
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "billing_calculation_service.py has zero imports beyond Types/stdlib (pure function, no Repository/Config); registration_service.py and plan_catalog_service.py import Types/Config/Repository/logging_service only, no API imports."
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy --strict clean on all of backend/src; no `Any` usage; billing_calculation_service.py uses Decimal exclusively, no float (E4-S2 AC-4)."
+      },
+      "folder_structure": {
+        "required": true,
+        "description": "service/registration_service.py, service/plan_catalog_service.py, service/billing_calculation_service.py exist, plus one test file each; repository/subscriber_repository.py gained get_active_subscription_by_mobile, repository/plan_repository.py gained update_draft_plan_version, types/exceptions.py gained InvalidMobileNumberError/DuplicateActiveSubscriptionError/PlanVersionImmutableError, service/logging_service.py's PII_FIELD_NAMES gained identity_proof_ref."
+      },
+      "env_vars": {
+        "required": false,
+        "description": "No new environment variables introduced in Group C."
+      },
+      "migrations": {
+        "required": false,
+        "description": "No schema.sql changes in Group C — all three stories operate on tables/columns already created in Group B."
+      },
+      "test_checks": [
+        {
+          "id": "grp-c-01", "feature": "F030", "story": "E2-S2", "ac": "AC-1",
+          "description": "Registering with a valid mobile number, identity-proof reference, and plan type creates a subscription in PENDING_KYC state, and both rows are persisted.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_registration_service.py::test_register_subscriber_creates_a_pending_kyc_subscription tests/unit/test_registration_service.py::test_register_subscriber_persists_subscriber_and_subscription_rows",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-c-02", "feature": "F031", "story": "E2-S2", "ac": "AC-2",
+          "description": "Registering a mobile number that already has an ACTIVE subscription is rejected with a specific error (DuplicateActiveSubscriptionError), not a generic failure.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_registration_service.py::test_register_subscriber_rejects_when_mobile_already_has_an_active_subscription",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-c-03", "feature": "F032", "story": "E2-S2", "ac": "AC-3",
+          "description": "Registering with a malformed mobile number is rejected before any database write (parametrized over multiple malformed examples — 5 collected items for this one test name).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_registration_service.py::test_register_subscriber_rejects_malformed_mobile_number_before_any_write",
+          "expected": "5 passed"
+        },
+        {
+          "id": "grp-c-04", "feature": "F033", "story": "E2-S2", "ac": "AC-4",
+          "description": "identity_proof_ref is persisted in full but masked when logged.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_registration_service.py::test_register_subscriber_persists_full_identity_proof_ref_but_masks_it_when_logged",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-c-05", "feature": "F053", "story": "E3-S2", "ac": "AC-1",
+          "description": "Creating a new plan starts an unpublished draft version at version number 1.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_catalog_service.py::test_create_draft_plan_version_starts_at_version_number_one",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-c-06", "feature": "F054", "story": "E3-S2", "ac": "AC-2",
+          "description": "Publishing a draft marks it published=true and it becomes the version returned by get_published_version.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_catalog_service.py::test_publishing_a_draft_makes_it_the_version_returned_by_get_published_version",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-c-07", "feature": "F055", "story": "E3-S2", "ac": "AC-3",
+          "description": "Attempting to edit a published version's price raises PlanVersionImmutableError rather than succeeding.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_catalog_service.py::test_editing_a_published_versions_price_raises_plan_version_immutable_error",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-c-08", "feature": "F056", "story": "E3-S2", "ac": "AC-4",
+          "description": "Requesting a change to a published plan creates a new incremented draft version, leaving the prior published version unchanged and retrievable.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_catalog_service.py::test_requesting_a_change_to_a_published_plan_creates_a_new_incremented_draft",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-c-09", "feature": "F057", "story": "E3-S2", "ac": "AC-5",
+          "description": "Only an admin-role principal can create, publish, or update a plan version; a non-admin attempt is rejected for all three operations (one of the three test names is parametrized over 2 non-admin roles, so 3 named tests collect as 4 items).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_catalog_service.py::test_non_admin_cannot_create_a_draft_plan_version tests/unit/test_plan_catalog_service.py::test_non_admin_cannot_publish_a_plan_version tests/unit/test_plan_catalog_service.py::test_non_admin_cannot_update_a_draft_plan_version",
+          "expected": "4 passed"
+        },
+        {
+          "id": "grp-c-10", "feature": "F071", "story": "E4-S2", "ac": "AC-1",
+          "description": "A plan change exactly at a billing-cycle boundary produces a pro-rata charge of 0.00 (scenario 1 of the table-driven parametrized test — the full parametrized test is run since a single case cannot be cleanly selected by name; scenario 1 is change_date == cycle_end -> 0.00, asserted alongside the other 5).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_billing_calculation_service.py::test_calculate_pro_rata_charge_matches_expected_decimal_exactly",
+          "expected": "6 passed"
+        },
+        {
+          "id": "grp-c-11", "feature": "F072", "story": "E4-S2", "ac": "AC-2",
+          "description": "A plan change mid-cycle in non-leap-year February (2026, 28 days) and leap-year February (2028, 29 days) both produce correct, distinct pro-rata amounts (scenarios 2 and 3 of the same parametrized test as grp-c-10 — shared evidence, same command/expected).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_billing_calculation_service.py::test_calculate_pro_rata_charge_matches_expected_decimal_exactly",
+          "expected": "6 passed"
+        },
+        {
+          "id": "grp-c-12", "feature": "F073", "story": "E4-S2", "ac": "AC-3",
+          "description": "The calculated charge is always >= 0, including a downgrade scenario whose raw differential is negative (NFR-08).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_billing_calculation_service.py::test_all_boundary_date_scenarios_are_never_negative",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-c-13", "feature": "F074", "story": "E4-S2", "ac": "AC-4",
+          "description": "All intermediate and final amounts are Decimal typed; no float is used anywhere in the calculation module.",
+          "command": "cd backend && grep -n 'float' src/app/service/billing_calculation_service.py || echo NONE_FOUND",
+          "expected": "NONE_FOUND"
+        },
+        {
+          "id": "grp-c-14", "feature": "F075", "story": "E4-S2", "ac": "AC-5",
+          "description": "A unit test table-drives at least 6 boundary-date scenarios (including the leap-year case) and asserts exact expected Decimal values (same parametrized test as grp-c-10/grp-c-11 — this feature is about the test's coverage breadth, satisfied by the same 6-item table).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_billing_calculation_service.py::test_calculate_pro_rata_charge_matches_expected_decimal_exactly",
+          "expected": "6 passed"
+        },
+        {
+          "id": "grp-c-15-full-suite", "feature": null, "story": "all Group C stories", "ac": "cross-cutting gate",
+          "description": "Full backend test suite, lint, and strict typecheck all clean together (regression gate covering Groups A+B+C combined).",
+          "command": "cd backend && uv run pytest -q && uv run ruff check . && uv run mypy src/",
+          "expected": "165 passed; ruff: All checks passed!; mypy: Success: no issues found in 44 source files"
+        },
+        {
+          "id": "grp-c-16-coverage", "feature": null, "story": "all Group C stories", "ac": "cross-cutting gate",
+          "description": "100% statement coverage across all backend source files touched through Group C.",
+          "command": "cd backend && uv run pytest -q --cov=app --cov-report=term-missing",
+          "expected": "TOTAL 100% (664 or more statements, 0 missing)"
+        }
+      ]
+    }
+  },
+  "note_for_evaluator": "Two of these test names are parametrized (test_calculate_pro_rata_charge_matches_expected_decimal_exactly over 6 boundary scenarios; test_register_subscriber_rejects_malformed_mobile_number_before_any_write over 5 malformed examples; test_non_admin_cannot_create_a_draft_plan_version over 2 roles) — every expected count in this contract already accounts for parametrize expansion (independently verified via `pytest -v --collect-only` for each, learning from the Group B contract's off-by-one mistake). Do not assume 1 item per bare function name; if any count still doesn't match, treat it as a genuine finding, not another authoring slip — re-verify via collect-only before assuming it's a repeat of the same class of bug. api_checks/playwright_checks are intentionally empty for the same reason as Groups A/B (no long-running server; Service-layer stories have no HTTP surface at all in this group). Skip the Docker/health-check step and evaluate only contract.architecture_checks, including every test_checks entry."
+}
