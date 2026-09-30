@@ -25,6 +25,7 @@
   .pill-active{background:var(--ok-bg);color:var(--ok);}
   .pill-suspended{background:var(--warn-bg);color:var(--warn);}
   .pill-portout{background:#eee7fb;color:#5b3ea6;}
+  .pill-portedout{background:#f1f3f7;color:#6b7686;}
   .btn{width:100%;padding:12px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;}
   .btn-primary{background:var(--brand);color:#fff;}
   .btn-warn{background:#fff;color:var(--warn);border:1px solid var(--warn);}
@@ -53,6 +54,7 @@
       <button class="btn-ghost" onclick="setState('ACTIVE')">Demo: ACTIVE</button>
       <button class="btn-ghost" onclick="setState('SUSPENDED')">Demo: SUSPENDED</button>
       <button class="btn-ghost" onclick="setState('PORT_OUT_REQUESTED')">Demo: PORT_OUT_REQUESTED</button>
+      <button class="btn-ghost" onclick="setState('PORTED_OUT')">Demo: PORTED_OUT</button>
     </div>
 
     <div class="card">
@@ -79,7 +81,15 @@
         <div class="date" id="coolingEndDate">Ends 2026-10-07</div>
         <div class="days">7-day cooling period · request submitted 2026-09-30</div>
         <button class="btn btn-primary" style="margin-top:12px" onclick="cancelPortOut()">Cancel port-out</button>
-        <span class="api-tag" style="margin-bottom:0">POST /api/subscriptions/{id}/port-out/cancel</span>
+        <span class="api-tag">POST /api/subscriptions/{id}/port-out/cancel</span>
+        <button class="btn btn-danger" onclick="finalizePortOut()">Finalize port-out (after window)</button>
+        <span class="api-tag" style="margin-bottom:0">POST /api/subscriptions/{id}/port-out/finalize</span>
+      </div>
+
+      <div class="cooling-box hidden" id="portedOutBox" style="background:#f1f3f7;border-color:var(--border);">
+        <div class="label" style="color:var(--muted);">Number ported out</div>
+        <div class="date" style="color:var(--text);">Finalized 2026-10-07</div>
+        <div class="days">This subscription is terminal — no further lifecycle actions are available.</div>
       </div>
     </div>
 
@@ -102,26 +112,28 @@
     var resumeTag = document.getElementById('resumeTag');
     var portOutBtn = document.getElementById('portOutBtn');
     var coolingBox = document.getElementById('coolingBox');
+    var portedOutBox = document.getElementById('portedOutBox');
 
     pill.className = 'status-pill';
+    suspendBtn.classList.add('hidden');
+    resumeBtn.classList.add('hidden'); resumeTag.classList.add('hidden');
+    portOutBtn.classList.add('hidden');
+    coolingBox.classList.add('hidden');
+    portedOutBox.classList.add('hidden');
+
     if (state === 'ACTIVE'){
       pill.textContent = 'ACTIVE'; pill.classList.add('pill-active');
       suspendBtn.classList.remove('hidden');
-      resumeBtn.classList.add('hidden'); resumeTag.classList.add('hidden');
       portOutBtn.classList.remove('hidden');
-      coolingBox.classList.add('hidden');
     } else if (state === 'SUSPENDED'){
       pill.textContent = 'SUSPENDED'; pill.classList.add('pill-suspended');
-      suspendBtn.classList.add('hidden');
       resumeBtn.classList.remove('hidden'); resumeTag.classList.remove('hidden');
-      portOutBtn.classList.add('hidden');
-      coolingBox.classList.add('hidden');
     } else if (state === 'PORT_OUT_REQUESTED'){
       pill.textContent = 'PORT_OUT_REQUESTED'; pill.classList.add('pill-portout');
-      suspendBtn.classList.add('hidden');
-      resumeBtn.classList.add('hidden'); resumeTag.classList.add('hidden');
-      portOutBtn.classList.add('hidden');
       coolingBox.classList.remove('hidden');
+    } else if (state === 'PORTED_OUT'){
+      pill.textContent = 'PORTED_OUT'; pill.classList.add('pill-portedout');
+      portedOutBox.classList.remove('hidden');
     }
   }
 
@@ -129,6 +141,7 @@
   function doResume(){ setState('ACTIVE'); }
   function doPortOut(){ setState('PORT_OUT_REQUESTED'); }
   function cancelPortOut(){ setState('ACTIVE'); }
+  function finalizePortOut(){ setState('PORTED_OUT'); }
 
   render();
 </script>

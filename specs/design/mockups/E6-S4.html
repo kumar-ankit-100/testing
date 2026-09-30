@@ -116,14 +116,14 @@
 <script>
   var selected = null;
 
-  function selectItem(row, subscriberId, type, reasonCode, requestedAt){
+  function selectItem(row, subscriptionId, type, reasonCode, requestedAt){
     document.querySelectorAll('#queueBody tr').forEach(function(r){ r.classList.remove('selected'); });
     row.classList.add('selected');
-    selected = {row: row, subscriberId: subscriberId, type: type, reasonCode: reasonCode};
+    selected = {row: row, subscriptionId: subscriptionId, type: type, reasonCode: reasonCode};
 
     document.getElementById('noSelection').classList.add('hidden');
     document.getElementById('overrideForm').classList.remove('hidden');
-    document.getElementById('selSubscriber').textContent = subscriberId;
+    document.getElementById('selSubscriber').textContent = subscriptionId;
     document.getElementById('selReason').textContent = reasonCode;
     document.getElementById('overrideReason').value = '';
     document.getElementById('overrideNote').value = '';
