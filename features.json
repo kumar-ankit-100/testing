@@ -293,10 +293,10 @@
       "Call a CSR-scoped endpoint",
       "Assert response status is not 403"
     ],
-    "passes": false,
-    "last_evaluated": "2026-09-30T05:16:09Z",
-    "failure_reason": "test_checks grp-b-09 (cd backend && uv run pytest -q tests/integration/test_auth.py::test_csr_or_admin_can_access_their_scoped_endpoint_without_403 tests/integration/test_auth.py::test_subscriber_requesting_own_data_succeeds tests/integration/test_auth.py::test_csr_and_admin_are_not_subject_to_subscriber_ownership_checks) returned '4 passed', contract expected '3 passed'. Root cause: test_csr_or_admin_can_access_their_scoped_endpoint_without_403 is @pytest.mark.parametrize('role', [Role.CSR, Role.ADMIN]) (backend/tests/integration/test_auth.py:135-136), so selecting it by bare function name collects 2 test items instead of 1. All 4 collected tests pass with zero failures -- the underlying AC-4 behavior is correct; this is a test-count mismatch against the sprint contract's expected string, not a functional defect.",
-    "failure_layer": "api"
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:22:48Z",
+    "failure_reason": null,
+    "failure_layer": null
   },
   {
     "id": "F020",
@@ -308,10 +308,10 @@
       "Run an integration test suite covering unauthenticated, wrong-role, cross-subscriber, and correct-role cases",
       "Assert all four expected outcomes"
     ],
-    "passes": false,
-    "last_evaluated": "2026-09-30T05:16:09Z",
-    "failure_reason": "test_checks grp-b-10 (cd backend && uv run pytest -q tests/integration/test_auth.py) returned '8 passed', contract expected '7 passed'. Same root cause as F019/grp-b-09: test_csr_or_admin_can_access_their_scoped_endpoint_without_403 is parametrized over [Role.CSR, Role.ADMIN], so the file collects 8 test items, not 7. All 8 pass with zero failures; confirmed consistent with the full-suite run (grp-b-39: exactly 129 passed, matching the contract's own aggregate expectation) -- this is a test-count mismatch against the sprint contract's expected string, not a functional defect.",
-    "failure_layer": "api"
+    "passes": true,
+    "last_evaluated": "2026-09-30T05:22:48Z",
+    "failure_reason": null,
+    "failure_layer": null
   },
   {
     "id": "F021",
