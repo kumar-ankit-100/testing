@@ -12,6 +12,64 @@ coverage: 0%
 learned_rules: 0
 blocked_stories: none
 
+=== Session 1 ===
+date: 2026-09-30
+mode: /implement (generator)
+groups_completed: [] (Group A implemented by generator; NOT yet evaluator-approved — do not mark complete until evaluator runs)
+groups_remaining: [A (pending evaluation), B, C, D, E, F, G, H]
+current_group: A
+current_stories: [E1-S1, E1-S2] — code + tests written and committed; awaiting evaluator
+sprint_contract: none written yet for Group A (no sprint-contracts/group-a.json exists — should be created before/with evaluation)
+last_commit: d62e740 (develop) — "Merge feat/group-a-types-config into develop"
+backend_test_suite: 29/29 passing, 100% line coverage on all files touched (app.types, app.config), ruff clean, mypy --strict clean
+coverage: 100% (backend/src/app/types, backend/src/app/config; no other backend code exists yet)
+learned_rules: 0
+blocked_stories: none
+
+what_was_built (Group A):
+  - backend/ project scaffolded from scratch (did not exist before this session): pyproject.toml
+    (uv-managed: fastapi, uvicorn, pydantic, pydantic-settings, pyjwt; dev: pytest, pytest-cov,
+    httpx, ruff, mypy), uv.lock, .python-version pinned to 3.12, empty __init__.py stubs for
+    repository/service/api(+routers,+schemas)/lib per specs/design/folder-structure.md.
+  - E1-S1 (Types layer): src/app/types/{enums,fsm,exceptions,subscriber,subscription,plan,
+    billing,state_transition,port_out,csr_override,dealer}.py. SubscriberState/PlanType/Role/
+    PortOutStatus/OverriddenAction/ReasonCode enums; declarative 8-edge FSM transition table +
+    transition() + InvalidSubscriberStateException; frozen dataclasses for all 8 domain types
+    with Decimal-typed money fields that raise TypeError on non-Decimal input. Zero imports
+    from Config/Repository/Service/API/UI (grep-verified). tests/unit/{test_types,test_fsm}.py,
+    23 tests, 100% coverage.
+  - E1-S2 (Config layer): src/app/config/{settings,stub_flags,db}.py. pydantic-settings
+    Settings (db_path, kyc_stub_verified, mnp_stub_success, dealer_fail_code) with documented
+    defaults, env-var overridable; stub_flags.py holds the default constants (DEALER-FAIL
+    sentinel, KYC/MNP booleans) as single source of truth; create_connection() applies
+    PRAGMA journal_mode=WAL before returning the SQLite connection. tests/unit/test_config.py,
+    6 tests, 100% coverage, _env_file=None used to isolate default-fallback test from any
+    local .env.
+  - Git workflow followed per CLAUDE.md: branch feat/group-a-types-config off develop, two
+    conventional commits (feat: E1-S1, feat: E1-S2), merged --no-ff into develop as d62e740.
+    No direct commits to main.
+
+process_note — agent-team coordination gap discovered this session:
+  Initially spawned two parallel teammates (teammate-types for E1-S1, teammate-config for
+  E1-S2) per the Implement skill's "spawn agent team for 2+ story groups" instruction, with
+  each told to present a plan and STOP/wait for coordinator approval before writing code.
+  This stalled: the generator's tool grant (Read/Write/Edit/Glob/Grep/Bash/Agent) does NOT
+  include SendMessage, so there was no way to deliver approval back to a waiting spawned
+  agent — a new Agent call starts a fresh agent with no memory of the prior run, it does not
+  resume it. Both teammates were left stuck with no code written and nothing committed
+  (this is the state the coordinator observed and flagged). Corrective action taken: abandoned
+  the stuck teammates, and implemented both E1-S1 and E1-S2 directly (generator itself, strict
+  TDD, one story at a time) rather than via a blocking plan-approval handoff it cannot fulfill.
+  LEARNED RULE CANDIDATE for .claude/state/learned-rules.md: do not instruct spawned teammates
+  to stop and wait for a follow-up approval message unless the spawning agent's toolset
+  actually includes SendMessage — otherwise spawn single-shot teammates that plan+implement+
+  test+commit in one continuous run, reviewed post-hoc via diff instead of a blocking pre-code
+  gate.
+
+next_action: write sprint-contracts/group-a.json (or confirm evaluator does this), then hand
+  off Group A to the evaluator agent for verification against E1-S1/E1-S2 acceptance criteria
+  before starting Group B (E1-S3, E1-S4, E1-S5, E2-S1, E3-S1, E4-S1, E5-S1, E6-S1, E7-S1).
+
 phase_1_brd: approved (specs/brd/brd.md)
 phase_2_spec: approved (7 epics, 34 stories, 153 features; specs/stories/*.md, specs/stories/dependency-graph.md, specs/features.json)
 phase_3_design: approved (specs/design/*.md, specs/design/api-contracts.schema.json, specs/design/data-models.schema.json, specs/design/mockups/*.html)
