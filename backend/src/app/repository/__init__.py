@@ -7,6 +7,10 @@ from app.repository.billing_repository import (
     create_billing_record,
     list_billing_records_for_subscription,
 )
+from app.repository.csr_override_repository import (
+    create_csr_override,
+    list_csr_overrides_for_subscription,
+)
 from app.repository.dealer_repository import get_dealer_by_code
 from app.repository.plan_repository import (
     create_plan_version,
@@ -42,6 +46,7 @@ __all__ = [
     "apply_schema",
     "close_port_out_event",
     "create_billing_record",
+    "create_csr_override",
     "create_plan_version",
     "create_port_out_event",
     "create_subscriber",
@@ -56,6 +61,7 @@ __all__ = [
     "get_user_by_mobile",
     "get_user_by_username",
     "list_billing_records_for_subscription",
+    "list_csr_overrides_for_subscription",
     "list_state_transitions_for_subscription",
     "list_versions",
     "publish_plan_version",
