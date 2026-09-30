@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "dev-only-insecure-secret-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expiry_minutes: int = 60
+    # Plan-change eligibility (E4-S3): a subscription must have been
+    # ACTIVE for at least this many days before a plan change is allowed.
+    # No story pins an exact value; 90 days is a standard telecom
+    # minimum-tenure window for plan changes.
+    min_tenure_days: int = 90
 
 
 def get_settings() -> Settings:

@@ -1,0 +1,37 @@
+/**
+ * Plan catalog admin API calls (E3-S4).
+ *
+ * API layer — the only module besides client.ts that talks to the network
+ * for this story's endpoints.
+ */
+
+import { apiFetch } from "./client";
+import type {
+  CreatePlanVersionRequest,
+  CreatePlanVersionResponse,
+  PlanVersionDto,
+  PlanVersionListResponse,
+  PublishPlanVersionResponse,
+} from "../types/api";
+
+export async function listPlanVersions(): Promise<PlanVersionDto[]> {
+  const response = await apiFetch<PlanVersionListResponse>("/api/admin/plans");
+  return response.plans;
+}
+
+export async function createPlanVersion(
+  request: CreatePlanVersionRequest,
+): Promise<CreatePlanVersionResponse> {
+  return apiFetch<CreatePlanVersionResponse>("/api/admin/plans", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export async function publishPlanVersion(
+  planVersionId: string,
+): Promise<PublishPlanVersionResponse> {
+  return apiFetch<PublishPlanVersionResponse>(`/api/admin/plans/${planVersionId}/publish`, {
+    method: "POST",
+  });
+}

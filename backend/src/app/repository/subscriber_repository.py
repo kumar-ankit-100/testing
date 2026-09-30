@@ -101,6 +101,56 @@ def get_active_subscription_by_mobile(
     return _row_to_subscription(row)
 
 
+def get_subscription_by_id(
+    connection: sqlite3.Connection, subscription_id: str
+) -> Subscription | None:
+    """Return the subscription with subscription_id, or None.
+
+    Used by every lifecycle service (suspend/resume, port-out, plan
+    change) that is keyed by subscription_id per api-contracts.md,
+    unlike activation which is keyed by subscriber_id.
+    """
+    row = connection.execute(
+        f"SELECT {_SUBSCRIPTION_COLUMNS} FROM subscriptions WHERE subscription_id = ?",
+        (subscription_id,),
+    ).fetchone()
+    return _row_to_subscription(row)
+
+
+def update_subscription_state(
+    connection: sqlite3.Connection,
+    subscription_id: str,
+    new_state: SubscriberState,
+    updated_at: datetime,
+) -> None:
+    """Set state and updated_at only — does not touch activated_at.
+
+    Used by suspend/resume and port-out services, whose FSM-validity
+    check (is this transition legal) is the caller's responsibility,
+    evaluated before this function is called.
+    """
+    connection.execute(
+        "UPDATE subscriptions SET state = ?, updated_at = ? WHERE subscription_id = ?",
+        (new_state.value, updated_at.isoformat(), subscription_id),
+    )
+    connection.commit()
+
+
+def update_subscription_plan(
+    connection: sqlite3.Connection,
+    subscription_id: str,
+    new_plan_version_id: str,
+    updated_at: datetime,
+) -> None:
+    """Set current_plan_version_id and updated_at (E4-S3 plan change commit)."""
+    connection.execute(
+        "UPDATE subscriptions SET current_plan_version_id = ?, updated_at = ? "
+        "WHERE subscription_id = ?",
+        (new_plan_version_id, updated_at.isoformat(), subscription_id),
+    )
+    connection.commit()
+
+
 def get_subscription_by_subscriber_id(
     connection: sqlite3.Connection, subscriber_id: str
 ) -> Subscription | None:
