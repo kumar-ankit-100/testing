@@ -1,0 +1,194 @@
+{
+  "group": "E",
+  "stories": ["E2-S4", "E3-S4", "E4-S3", "E5-S2", "E5-S3"],
+  "features": [
+    "F040", "F041", "F042", "F043", "F044",
+    "F063", "F064", "F065", "F066",
+    "F076", "F077", "F078", "F079", "F080",
+    "F094", "F095", "F096", "F097",
+    "F098", "F099", "F100", "F101", "F102"
+  ],
+  "contract": {
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "suspend_resume_service.py/port_out_service.py/plan_change_service.py import Types/Config/Repository only (plan_change_service.py also imports billing_calculation_service, Service-to-Service is allowed per architecture.md); subscriber_router.py imports Types/Config/Repository/Service only, no UI. Frontend: api/ is the only layer that calls fetch(); ui/ imports types/service/api only."
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy --strict clean on all of backend/src (no Any); frontend tsc --noEmit clean (no any)."
+      },
+      "folder_structure": {
+        "required": true,
+        "description": "service/{suspend_resume,port_out,plan_change}_service.py, api/routers/subscriber_router.py, api/schemas/subscriber_schemas.py exist with matching test files; frontend/ scaffolded per folder-structure.md (Vite+React+TS+vitest+eslint+Playwright) with src/ui/pages/AdminPlanCatalogPage.tsx, src/service/usePlanCatalog.ts, src/api/planApi.ts, src/ui/components/StateBadge.tsx, e2e/admin-plan-catalog.spec.ts."
+      },
+      "env_vars": {
+        "required": true,
+        "description": "Settings gained min_tenure_days (default 90, env-overridable) — the existing E1-S2 default-fallback and env-override tests (test_config.py) were extended to cover it rather than duplicated."
+      },
+      "migrations": {
+        "required": false,
+        "description": "No schema.sql changes in Group E — all three services operate on tables/columns already created in Group B."
+      },
+      "test_checks": [
+        {
+          "id": "grp-e-01", "feature": "F040", "story": "E2-S4", "ac": "AC-1",
+          "description": "POST /api/subscribers/register with valid input returns HTTP 201 with the new subscriber/subscription IDs.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_subscriber_api.py::test_register_with_valid_input_returns_201_pending_kyc",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-02", "feature": "F041", "story": "E2-S4", "ac": "AC-2",
+          "description": "POST /api/subscribers/{id}/activate with all stub flags passing returns HTTP 200 with state ACTIVE.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_subscriber_api.py::test_activate_with_all_flags_passing_returns_200_active",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-03", "feature": "F042", "story": "E2-S4", "ac": "AC-3",
+          "description": "POST /api/subscribers/{id}/activate with a failing stub flag returns HTTP 422 with a machine-readable reason code.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_subscriber_api.py::test_activate_with_dealer_fail_sentinel_returns_422_with_reason_code",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-04", "feature": "F043", "story": "E2-S4", "ac": "AC-4",
+          "description": "POST /api/subscribers/{id}/activate on an already-ACTIVE subscriber returns HTTP 409.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_subscriber_api.py::test_activate_an_already_active_subscriber_returns_409",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-05", "feature": "F044", "story": "E2-S4", "ac": "AC-5",
+          "description": "Requests are validated against typed request models — malformed mobile number and an unknown plan_type enum value are both rejected as 422 before reaching the service.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_subscriber_api.py::test_register_with_malformed_mobile_number_returns_422 tests/integration/test_subscriber_api.py::test_register_request_body_rejects_an_unknown_plan_type",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e-06", "feature": "F063", "story": "E3-S4", "ac": "AC-1",
+          "description": "UI lists all plan versions for a plan with a visible published/draft badge per version.",
+          "command": "cd frontend && npx vitest run tests/AdminPlanCatalogPage.test.tsx -t \"lists every version with a visible published/draft badge\"",
+          "expected": "Tests 1 passed | 5 skipped (6)"
+        },
+        {
+          "id": "grp-e-07", "feature": "F064", "story": "E3-S4", "ac": "AC-2",
+          "description": "Admin can submit a form to create a new draft version, prefillable from the current published version's fields.",
+          "command": "cd frontend && npx vitest run tests/AdminPlanCatalogPage.test.tsx -t \"AC-2\"",
+          "expected": "Tests 2 passed | 4 skipped (6)"
+        },
+        {
+          "id": "grp-e-08", "feature": "F065", "story": "E3-S4", "ac": "AC-3",
+          "description": "Editing a field on a published version is disabled/blocked in the UI, with an inline immutability message.",
+          "command": "cd frontend && npx vitest run tests/AdminPlanCatalogPage.test.tsx -t \"blocked, inline message\"",
+          "expected": "Tests 1 passed | 5 skipped (6)"
+        },
+        {
+          "id": "grp-e-09", "feature": "F066", "story": "E3-S4", "ac": "AC-4",
+          "description": "Publishing a draft from the UI updates the visible published badge without a full page reload (SPA state refresh).",
+          "command": "cd frontend && npx vitest run tests/AdminPlanCatalogPage.test.tsx -t \"AC-4\"",
+          "expected": "Tests 1 passed | 5 skipped (6)"
+        },
+        {
+          "id": "grp-e-10", "feature": "F076", "story": "E4-S3", "ac": "n/a",
+          "description": "A plan-change request on a subscription younger than the configured minimum-tenure period is rejected, with no BillingRecord written.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_change_service.py::test_plan_change_below_minimum_tenure_is_rejected_with_no_billing_record",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-11", "feature": "F077", "story": "E4-S3", "ac": "n/a",
+          "description": "A plan-change request on a SUSPENDED subscription is rejected with a visible reason code and no BillingRecord written.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_change_service.py::test_plan_change_on_a_suspended_subscription_is_rejected_with_no_billing_record",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-12", "feature": "F078", "story": "E4-S3", "ac": "n/a",
+          "description": "A preview call returns the computed pro-rata amount without persisting a BillingRecord or changing the subscription's plan.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_change_service.py::test_preview_returns_pro_rata_without_persisting_or_changing_plan",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-13", "feature": "F079", "story": "E4-S3", "ac": "n/a",
+          "description": "A commit call on an eligible ACTIVE subscription past minimum tenure updates the subscription's plan and persists a matching BillingRecord.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_change_service.py::test_commit_on_an_eligible_subscription_updates_plan_and_persists_matching_billing_record",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-14", "feature": "F080", "story": "E4-S3", "ac": "n/a",
+          "description": "Two consecutive commits for the same subscription each produce their own independent BillingRecord (no overwrite).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_plan_change_service.py::test_two_consecutive_commits_each_produce_an_independent_billing_record",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-15", "feature": "F094", "story": "E5-S2", "ac": "n/a",
+          "description": "Suspending an ACTIVE subscription transitions it to SUSPENDED and appends a StateTransition.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_suspend_resume_service.py::test_suspending_an_active_subscription_transitions_to_suspended",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-16", "feature": "F095", "story": "E5-S2", "ac": "n/a",
+          "description": "Resuming a SUSPENDED subscription transitions it back to ACTIVE and appends a StateTransition.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_suspend_resume_service.py::test_resuming_a_suspended_subscription_transitions_to_active",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-17", "feature": "F096", "story": "E5-S2", "ac": "n/a",
+          "description": "Attempting to suspend a subscription that is not ACTIVE (already SUSPENDED or PENDING_KYC) raises InvalidSubscriberStateException (parametrized over 2 states -> 2 collected items, verified via collect run).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_suspend_resume_service.py::test_suspending_a_non_active_subscription_raises_invalid_state_exception",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e-18", "feature": "F097", "story": "E5-S2", "ac": "n/a",
+          "description": "Attempting to resume a subscription that is not SUSPENDED raises InvalidSubscriberStateException (parametrized over 2 states -> 2 collected items, verified via collect run).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_suspend_resume_service.py::test_resuming_a_non_suspended_subscription_raises_invalid_state_exception",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e-19", "feature": "F098", "story": "E5-S3", "ac": "n/a",
+          "description": "Requesting port-out on an ACTIVE subscription transitions it to PORT_OUT_REQUESTED and creates a PortOutEvent.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_port_out_service.py::test_requesting_port_out_on_active_transitions_and_creates_event",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-20", "feature": "F099", "story": "E5-S3", "ac": "n/a",
+          "description": "Cancelling a port-out request within the 7-day window returns the subscription to ACTIVE and closes the event.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_port_out_service.py::test_cancelling_within_window_returns_to_active_and_closes_event",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-21", "feature": "F100", "story": "E5-S3", "ac": "n/a",
+          "description": "Finalizing a port-out request after the 7-day window has elapsed transitions the subscription to PORTED_OUT.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_port_out_service.py::test_finalizing_after_window_elapsed_transitions_to_ported_out",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-22", "feature": "F101", "story": "E5-S3", "ac": "n/a",
+          "description": "Attempting to finalize a port-out request before the 7-day window has elapsed is rejected.",
+          "command": "cd backend && uv run pytest -q tests/unit/test_port_out_service.py::test_finalizing_before_window_elapsed_is_rejected",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e-23", "feature": "F102", "story": "E5-S3", "ac": "n/a",
+          "description": "Requesting port-out on a subscription that is not ACTIVE raises InvalidSubscriberStateException (parametrized over 2 states -> 2 collected items, verified via collect run).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_port_out_service.py::test_requesting_port_out_on_a_non_active_subscription_raises_invalid_state_exception",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e-24-backend-full-suite", "feature": null, "story": "all Group E backend stories", "ac": "cross-cutting gate",
+          "description": "Full backend test suite, lint, and strict typecheck all clean together.",
+          "command": "cd backend && uv run pytest -q && uv run ruff check . && uv run mypy src/",
+          "expected": "237 passed; ruff: All checks passed!; mypy: Success: no issues found in 52 source files"
+        },
+        {
+          "id": "grp-e-25-backend-coverage", "feature": null, "story": "all Group E backend stories", "ac": "cross-cutting gate",
+          "description": "100% statement coverage across all backend source files touched through Group E.",
+          "command": "cd backend && uv run pytest -q --cov=app --cov-report=term-missing",
+          "expected": "TOTAL 100% (1036 or more statements, 0 missing)"
+        },
+        {
+          "id": "grp-e-26-frontend-full-suite", "feature": null, "story": "E3-S4", "ac": "cross-cutting gate",
+          "description": "Full frontend test suite, lint, typecheck, and production build all clean together.",
+          "command": "cd frontend && npm test -- --run && npm run lint && npm run typecheck && npm run build",
+          "expected": "Test Files 3 passed (3); Tests 12 passed (12); lint clean (no output); typecheck clean (no output); build succeeds"
+        }
+      ]
+    }
+  },
+  "note_for_evaluator": "Three backend test names are parametrized (test_suspending_a_non_active_subscription_raises_invalid_state_exception over 2 states, test_resuming_a_non_suspended_subscription_raises_invalid_state_exception over 2 states, test_requesting_port_out_on_a_non_active_subscription_raises_invalid_state_exception over 2 states) — every expected count already accounts for this, verified via pytest --collect-only before writing the contract. Frontend vitest checks (grp-e-06 through grp-e-09) use `-t` name-pattern filtering rather than full test-name selection since vitest's CLI filtering differs from pytest's node-ID syntax — if a `-t` filter matches more or fewer tests than expected, verify the actual vitest test titles in tests/AdminPlanCatalogPage.test.tsx before concluding it's a defect (titles embed their AC tag, e.g. \"(AC-2)\", by design). A significant NON-CODE finding from this group: no story anywhere builds POST /api/auth/login, yet E1-S4's auth deps and E3-S3's already-evaluated admin router both assume it exists — E2-S4/E3-S4 chose to leave their routes ungated rather than invent unscoped auth wiring, documented in code. This is a spec-decomposition gap, not a contract-evaluation concern for Group E's own ACs (none of which require a login endpoint) — note it in your report but it should not by itself cause a FAIL, since it isn't part of any AC being evaluated here. api_checks/playwright_checks remain empty for the same reason as every prior group (TestClient/vitest equivalent evidence; e2e/admin-plan-catalog.spec.ts exists but is intentionally not run yet — it needs live dev servers and the auth gap resolved first, both out of scope for this evaluation)."
+}
