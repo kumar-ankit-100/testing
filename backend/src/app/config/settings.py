@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     kyc_stub_verified: bool = DEFAULT_KYC_STUB_VERIFIED
     mnp_stub_success: bool = DEFAULT_MNP_STUB_SUCCESS
     dealer_fail_code: str = DEFAULT_DEALER_FAIL_CODE
+    # JWT settings (added E1-S4): jwt_secret_key's default is an explicitly
+    # dev-only placeholder, not a real credential — override via the
+    # JWT_SECRET_KEY env var for any non-local environment.
+    jwt_secret_key: str = "dev-only-insecure-secret-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expiry_minutes: int = 60
 
 
 def get_settings() -> Settings:
