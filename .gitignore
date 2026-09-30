@@ -14,3 +14,8 @@ build/
 .ruff_cache/
 playwright-report/
 test-results/
+backend/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

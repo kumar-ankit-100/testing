@@ -118,5 +118,64 @@ Notable in-flight findings:
 
 Result: 165 tests, 100% line coverage across the entire backend (664
 statements), ruff/mypy clean, zero upward-layer imports. All commits on
-feat/group-c-services. Awaiting evaluator review (not self-assessed by the
-generator).
+feat/group-c-services. Passed evaluator review (16/16 checks, all
+architecture_checks, 165/165 tests). Pushed to origin as 310c1f8 by the
+coordinator. Verified as develop's tip before starting Group D.
+
+## Group D
+
+2 stories: E2-S3 (rule-based activation engine), E3-S3 (plan catalog admin
+API endpoints — the first real business router beyond health).
+
+Micro-DAG: component-map.md shows these two share only error_handlers.py
+(E3-S3 extends it; E2-S3 doesn't touch it at all — pure Service layer, no
+HTTP mapping). No real conflict. Implemented sequentially: E2-S3 first
+(self-contained-ish), then E3-S3 (needed plan_catalog_service from E3-S2
+plus the new DB-connection/lifespan/error-handler plumbing below). One
+commit per story on feat/group-d-activation-and-plan-api.
+
+Notable in-flight findings:
+  - E2-S3: the double-activation race guard (AC-6) needed no new DB
+    mechanism — the partial unique index idx_subscriptions_active_mobile
+    (Group B, E2-S1) already guards UPDATE, not just INSERT, in SQLite.
+    Confirmed by a dedicated repository-level test before writing the
+    service, then exercised end-to-end via two PENDING_KYC registrations
+    for the same mobile number (E2-S2 only blocks a duplicate mobile
+    against an existing ACTIVE row, not another PENDING_KYC one) both
+    attempting activation sequentially.
+  - E2-S3: dealer validation implemented as a real DealerMaster lookup
+    (get_dealer_by_code + active flag check), not a hardcoded
+    "== DEALER-FAIL" string comparison — matches E2-S1's stated purpose
+    for the table and correctly rejects any unseeded code the same way,
+    not just the specific sentinel.
+  - E3-S3 surfaced a real gap while wiring up the first business router:
+    register_exception_handlers(app) had only ever been called on ad hoc
+    test-only FastAPI() instances (in E1-S4's and E3-S3's own test files)
+    — never on the actual production app returned by create_app(). Every
+    real request that hit an AuthorizationError/AuthenticationError would
+    have 500'd instead of mapping to 403/401. Fixed inside create_app().
+  - E3-S3: the admin API's publish/PUT routes receive only plan_version_id
+    in the URL (per api-contracts.md), but E3-S2's already-merged service
+    functions require plan_id too. Rather than changing E3-S2's signatures
+    (already evaluator-approved), added get_plan_version_by_id — a global,
+    non-plan_id-scoped lookup — so the router derives plan_id itself
+    before calling the existing service functions unchanged.
+  - E3-S3: response models type money fields as `str`, not `Decimal` —
+    a dedicated test (asserting the raw JSON text contains `"price":"849.00"`
+    with quotes) confirmed this is necessary: Pydantic/FastAPI's default
+    Decimal JSON encoding emits a bare number, which would have silently
+    violated api-contracts.md's "money fields are JSON strings" contract.
+  - E3-S3: adding a lifespan to create_app() (for one-time schema
+    application) meant every TestClient(app) now touches disk. Group B's
+    test_health.py imported the raw `app` singleton directly, so it would
+    have started writing a stray ./data/telcolane.db file on every test
+    run against the real default path. Fixed by switching it to build a
+    fresh create_app() per test with DB_PATH monkeypatched to an isolated
+    temp file — behavior-preserving, no assertions changed. Also added
+    *.db/backend/data/ to .gitignore, which had zero SQLite-artifact
+    exclusions until this story created the first real DB-touching route.
+
+Result: 196 tests, 100% line coverage across the entire backend (823
+statements), ruff/mypy clean, zero upward-layer imports. All commits on
+feat/group-d-activation-and-plan-api. Awaiting evaluator review (not
+self-assessed by the generator).

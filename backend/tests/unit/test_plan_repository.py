@@ -8,7 +8,9 @@ import pytest
 
 from app.repository.plan_repository import (
     create_plan_version,
+    get_plan_version_by_id,
     get_published_version,
+    list_all_plan_versions,
     list_versions,
     publish_plan_version,
     update_draft_plan_version,
@@ -177,3 +179,45 @@ def test_update_draft_plan_version_on_an_already_published_row_is_rejected(
         update_draft_plan_version(
             sqlite_connection, draft.plan_version_id, Decimal("1.00"), {}
         )
+
+
+def test_get_plan_version_by_id_finds_the_row_without_needing_plan_id(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    draft = _build_draft("PLAN-5G", 1, "799.00")
+    create_plan_version(sqlite_connection, draft)
+
+    found = get_plan_version_by_id(sqlite_connection, draft.plan_version_id)
+
+    assert found == draft
+
+
+def test_get_plan_version_by_id_returns_none_when_not_found(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    assert get_plan_version_by_id(sqlite_connection, "does-not-exist") is None
+
+
+def test_list_all_plan_versions_spans_every_plan_id_ordered_by_plan_then_version(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    plan_a_v1 = _build_draft("PLAN-4G", 1, "149.00")
+    plan_b_v1 = _build_draft("PLAN-5G", 1, "799.00")
+    plan_b_v2 = _build_draft("PLAN-5G", 2, "899.00")
+    create_plan_version(sqlite_connection, plan_b_v2)
+    create_plan_version(sqlite_connection, plan_a_v1)
+    create_plan_version(sqlite_connection, plan_b_v1)
+
+    all_versions = list_all_plan_versions(sqlite_connection)
+
+    assert [(v.plan_id, v.version_number) for v in all_versions] == [
+        ("PLAN-4G", 1),
+        ("PLAN-5G", 1),
+        ("PLAN-5G", 2),
+    ]
+
+
+def test_list_all_plan_versions_on_an_empty_database_is_empty(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    assert list_all_plan_versions(sqlite_connection) == []
