@@ -90,4 +90,108 @@ phase_3_design: approved (specs/design/*.md, specs/design/api-contracts.schema.j
 
 git: main = initial scaffold+BRD+spec+design commit only (ef3d581); develop = main + all approved amendments; all further work via feature branches merged --no-ff into develop, no direct commits to main.
 
-next_action: Phase 4 (/implement) — build story groups A through H per specs/stories/dependency-graph.md
+=== Session 2 ===
+date: 2026-09-30
+mode: /implement (generator)
+groups_completed: [A] (unchanged — see Session 1 for evaluator PASS detail)
+groups_remaining: [B (implemented by generator, NOT yet evaluator-approved), C, D, E, F, G, H]
+current_group: B
+current_stories: [E1-S3, E1-S4, E1-S5, E2-S1, E3-S1, E4-S1, E5-S1, E6-S1, E7-S1] — all 9 code +
+  tests written and committed; awaiting evaluator (do not mark groups_completed until reviewed)
+sprint_contract: none written yet for Group B — needs sprint-contracts/group-b.json before/with
+  evaluation, same as Group A's pattern
+last_commit: see git log on feat/group-b-foundations (9 story commits, not yet merged to develop
+  as of this entry — coordinator asked generator to hold merge for review; see note below)
+backend_test_suite: 129/129 passing, 100% line coverage across the entire backend (546
+  statements), ruff clean, mypy --strict clean, zero upward-layer imports (grep-verified all 5
+  boundaries: types->none, config->types, repository->types+config, service->+repository+lib,
+  api->+service, no UI imports)
+coverage: 100%
+learned_rules: 1 (see Rule 1 in .claude/state/learned-rules.md, added Session 1)
+blocked_stories: none
+
+what_was_built (Group B):
+  - E1-S3 (logging_service): lib/pii_mask.py (mask_last_n, pure/no project imports) +
+    service/logging_service.py (JsonFormatter + get_logger — single JSON object per line with
+    timestamp/level/message, masks mobile_number/aadhaar_ref/pan_ref found in
+    extra={"context": {...}}, idempotent handler attachment). 12 tests.
+  - E1-S5 (health check): api/main.py (create_app() factory — first version, mounts only
+    health_router) + api/routers/health_router.py (GET /health -> 200 {"status":"ok"}, typed
+    HealthResponse model, no auth, no DB check per system-design.md's explicit NFR-06 design —
+    this deliberately overrides SKILL.md's generic "health must check DB" gotcha because the
+    project's own system-design.md documents no-DB-round-trip as the intended mechanism). 4 tests.
+  - E1-S4 (auth): types/auth.py (User, Principal) + types/exceptions.py extended
+    (AuthenticationError->401, AuthorizationError->403) + config/settings.py extended
+    (jwt_secret_key/algorithm/expiry_minutes — folder-structure.md always intended this, E1-S2's
+    original AC's just didn't need it yet) + service/auth_service.py (create_access_token/
+    decode_access_token, self-contained JWT, no DB round-trip needed for authz) +
+    repository/schema.py (apply_schema() — the migration entry point every other Group B story
+    reuses) + repository/schema.sql (introduced; users table) + repository/user_repository.py +
+    api/deps.py (current_principal/require_role/require_own_subscriber) + api/error_handlers.py
+    (register_exception_handlers, initial 401/403 mapping). Real bug caught by its own
+    integration test and fixed same-story: current_principal originally called get_settings()
+    at module scope instead of receiving Settings via Depends(), so test-constructed tokens
+    always failed verification against real-env settings — fixed by injecting settings via
+    Depends(get_settings), overridable through app.dependency_overrides. 33 tests (13 unit types/
+    service/repo + 8 integration + others). Added ruff flake8-bugbear extend-immutable-calls
+    config for fastapi.Depends/require_role (B008 false-positives against FastAPI's DI pattern).
+  - E2-S1 (subscriber repo): schema.sql += subscribers, subscriptions (+ partial unique index
+    idx_subscriptions_active_mobile WHERE state='ACTIVE', the NFR-07 DB-level double-activation
+    guard), dealer_master (seeded 5 valid codes + DEALER-FAIL sentinel). repository/
+    subscriber_repository.py (create_subscriber, get_subscriber_by_id, get_subscriber_by_mobile,
+    create_subscription) + repository/dealer_repository.py (get_dealer_by_code). 12 tests
+    including the double-activation IntegrityError race-guard test and its non-ACTIVE-doesn't-
+    conflict counterpart.
+  - E3-S1 (plan catalog repo): schema.sql += plan_versions + trg_plan_versions_immutable_once_
+    published (BEFORE UPDATE WHEN OLD.published=1) + trg_plan_versions_no_delete. repository/
+    plan_repository.py (create_plan_version, publish_plan_version, get_published_version —
+    highest version_number among published=1 rows, list_versions). 9 tests including direct
+    raw-SQL UPDATE/DELETE/re-publish attempts against a published row, all rejected.
+  - E4-S1 (billing repo): schema.sql += billing_records (fully append-only, unconditional
+    no-update/no-delete triggers). repository/billing_repository.py (create_billing_record,
+    list_billing_records_for_subscription). 7 tests including exact-Decimal round-trip and two
+    records for one subscription both retrievable.
+  - E5-S1 (state transition + port-out repos): schema.sql += state_transitions (fully
+    append-only, same trigger pair) + port_out_events (delete-only trigger — UPDATE stays legal
+    for close_port_out_event). repository/state_transition_repository.py (append_state_transition,
+    list_state_transitions_for_subscription) + repository/port_out_repository.py
+    (create_port_out_event — computes cooling_period_end_at = requested_at + exactly 7 days and
+    generates its own ID, get_active_port_out_event, close_port_out_event). 12 tests including
+    the exact 7-day window and 3-transitions-chronological-order checks.
+  - E6-S1 (CSR override repo): schema.sql += csr_overrides (fully append-only, NOT NULL
+    actor/reason_code/created_at). repository/csr_override_repository.py (create_csr_override,
+    list_csr_overrides_for_subscription). 6 tests.
+  - E7-S1 (reporting repo): repository/reporting_repository.py (activation_funnel_counts,
+    monthly_churn_rate, plan_mix_distribution, arpu_trend) — no schema changes, reads existing
+    tables only. DOCUMENTED DATA-MODEL LIMITATION (not a bug): kyc_passed/dealer_passed/
+    mnp_passed report the same count as activated, because a rejected activation attempt writes
+    no row anywhere (per E2-S3's own spec) — there is no stored signal distinguishing which rule
+    a rejected attempt failed at, or even that an attempt was made at all. This satisfies AC-2
+    ("each stage <= prior stage") under equality rather than fabricating a false distinction.
+    monthly_churn_rate reconstructs the active base at each month's start via a correlated
+    subquery over state_transitions. 11 tests including the empty-database case for all 4
+    functions (feeds E7-S2 AC-1's future "well-formed empty funnel, no exception" requirement)
+    and a zero-active-base edge case.
+  - Git workflow: single branch feat/group-b-foundations off develop, one commit per story (9
+    commits total, each independently green: tests+ruff+mypy+coverage verified before moving to
+    the next story), strictly sequential TDD (no agent team spawned — see process_note).
+
+process_note — no agent team spawned for Group B, by design:
+  component-map.md's cross-cutting table shows schema.sql touched by 5 of these 9 stories
+  (E2-S1, E3-S1, E4-S1, E5-S1, E6-S1), and E7-S1 semantically reads tables those 5 stories
+  create, even though dependency-graph.md's Group B has no intra-group depends_on edges (all 9
+  are formally parallel-eligible). Combined with Learned Rule 1 (no SendMessage available to
+  coordinate teammates that would otherwise race on the same working directory/git branch/
+  shared schema.sql file), the generator chose direct sequential implementation over spawning
+  a team, in dependency-safe order (independent stories first: E1-S3, E1-S5, E1-S4; then the
+  schema-coupled repository stories in the order their tables are first needed; E7-S1 last since
+  it reads what the others create). This traded parallelism for correctness-under-the-actual-
+  tool-constraints; no rework or merge conflicts resulted. Full detail in iteration-log.md's
+  "## Group B" section.
+
+next_action: coordinator to independently re-verify (full backend suite + ruff + mypy) before
+  merging feat/group-b-foundations into develop; then either (a) generator writes
+  sprint-contracts/group-b.json and hands off to evaluator, or (b) coordinator does so directly,
+  matching whichever division of labor was used for Group A. After Group B evaluation, Group C
+  (E2-S2, E3-S2, E4-S2 — Service layer, first stories that depend on Group B repository code)
+  is next per specs/stories/dependency-graph.md.

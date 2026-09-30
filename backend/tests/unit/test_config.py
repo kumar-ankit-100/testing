@@ -20,7 +20,15 @@ from app.config.stub_flags import (
 def test_settings_falls_back_to_documented_defaults_when_env_unset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for env_var in ("DB_PATH", "KYC_STUB_VERIFIED", "MNP_STUB_SUCCESS", "DEALER_FAIL_CODE"):
+    for env_var in (
+        "DB_PATH",
+        "KYC_STUB_VERIFIED",
+        "MNP_STUB_SUCCESS",
+        "DEALER_FAIL_CODE",
+        "JWT_SECRET_KEY",
+        "JWT_ALGORITHM",
+        "JWT_EXPIRY_MINUTES",
+    ):
         monkeypatch.delenv(env_var, raising=False)
 
     settings = Settings(_env_file=None)
@@ -29,6 +37,9 @@ def test_settings_falls_back_to_documented_defaults_when_env_unset(
     assert settings.kyc_stub_verified == DEFAULT_KYC_STUB_VERIFIED
     assert settings.mnp_stub_success == DEFAULT_MNP_STUB_SUCCESS
     assert settings.dealer_fail_code == DEFAULT_DEALER_FAIL_CODE
+    assert settings.jwt_secret_key == "dev-only-insecure-secret-change-in-production"
+    assert settings.jwt_algorithm == "HS256"
+    assert settings.jwt_expiry_minutes == 60
 
 
 def test_settings_reads_overrides_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -36,6 +47,9 @@ def test_settings_reads_overrides_from_environment(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("KYC_STUB_VERIFIED", "false")
     monkeypatch.setenv("MNP_STUB_SUCCESS", "false")
     monkeypatch.setenv("DEALER_FAIL_CODE", "DEALER-FAIL")
+    monkeypatch.setenv("JWT_SECRET_KEY", "integration-test-secret-that-is-at-least-32-bytes-long")
+    monkeypatch.setenv("JWT_ALGORITHM", "HS256")
+    monkeypatch.setenv("JWT_EXPIRY_MINUTES", "15")
 
     settings = Settings(_env_file=None)
 
@@ -43,6 +57,8 @@ def test_settings_reads_overrides_from_environment(monkeypatch: pytest.MonkeyPat
     assert settings.kyc_stub_verified is False
     assert settings.mnp_stub_success is False
     assert settings.dealer_fail_code == "DEALER-FAIL"
+    assert settings.jwt_secret_key == "integration-test-secret-that-is-at-least-32-bytes-long"
+    assert settings.jwt_expiry_minutes == 15
 
 
 def test_get_settings_returns_a_settings_instance() -> None:

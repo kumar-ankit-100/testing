@@ -1,0 +1,92 @@
+"""Persistence for Subscriber and Subscription records (E2-S1).
+
+Repository layer — imports Types and Config only.
+"""
+
+import sqlite3
+from datetime import UTC, datetime
+
+from app.types.subscriber import Subscriber
+from app.types.subscription import Subscription
+
+_SUBSCRIBER_COLUMNS = "subscriber_id, mobile_number, identity_proof_ref, created_at"
+
+_INSERT_SUBSCRIPTION_SQL = """
+    INSERT INTO subscriptions (
+        subscription_id, subscriber_id, mobile_number, plan_type, state,
+        current_plan_version_id, dealer_code, created_at, activated_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+"""
+
+
+def create_subscriber(connection: sqlite3.Connection, subscriber: Subscriber) -> None:
+    """Insert a new subscriber row."""
+    connection.execute(
+        f"INSERT INTO subscribers ({_SUBSCRIBER_COLUMNS}) VALUES (?, ?, ?, ?)",
+        (
+            subscriber.subscriber_id,
+            subscriber.mobile_number,
+            subscriber.identity_proof_ref,
+            subscriber.created_at.isoformat(),
+        ),
+    )
+    connection.commit()
+
+
+def get_subscriber_by_id(connection: sqlite3.Connection, subscriber_id: str) -> Subscriber | None:
+    """Return the subscriber with subscriber_id, or None if not found."""
+    row = connection.execute(
+        f"SELECT {_SUBSCRIBER_COLUMNS} FROM subscribers WHERE subscriber_id = ?",
+        (subscriber_id,),
+    ).fetchone()
+    return _row_to_subscriber(row)
+
+
+def get_subscriber_by_mobile(
+    connection: sqlite3.Connection, mobile_number: str
+) -> Subscriber | None:
+    """Return the subscriber with mobile_number, or None if not found."""
+    row = connection.execute(
+        f"SELECT {_SUBSCRIBER_COLUMNS} FROM subscribers WHERE mobile_number = ?",
+        (mobile_number,),
+    ).fetchone()
+    return _row_to_subscriber(row)
+
+
+def create_subscription(connection: sqlite3.Connection, subscription: Subscription) -> None:
+    """Insert a new subscription row.
+
+    Raises sqlite3.IntegrityError if this would create a second ACTIVE
+    subscription for the same mobile number (the partial unique index
+    idx_subscriptions_active_mobile, per E2-S1 AC-2/AC-4).
+    """
+    connection.execute(
+        _INSERT_SUBSCRIPTION_SQL,
+        (
+            subscription.subscription_id,
+            subscription.subscriber_id,
+            subscription.mobile_number,
+            subscription.plan_type.value,
+            subscription.state.value,
+            subscription.current_plan_version_id,
+            subscription.dealer_code,
+            subscription.created_at.isoformat(),
+            subscription.activated_at.isoformat() if subscription.activated_at else None,
+            subscription.updated_at.isoformat(),
+        ),
+    )
+    connection.commit()
+
+
+def _row_to_subscriber(row: tuple[object, ...] | None) -> Subscriber | None:
+    if row is None:
+        return None
+    subscriber_id, mobile_number, identity_proof_ref, created_at = row
+    return Subscriber(
+        subscriber_id=str(subscriber_id),
+        mobile_number=str(mobile_number),
+        identity_proof_ref=str(identity_proof_ref),
+        created_at=datetime.fromisoformat(str(created_at)).replace(tzinfo=UTC),
+    )
+
+
