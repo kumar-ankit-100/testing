@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TelcoLane CSR — Exception Queue</title>
+<style>
+  :root{
+    --brand:#0b5fff; --bg:#eef1f7; --card:#fff; --text:#161c2b; --muted:#6b7686; --border:#dde2ec;
+    --ok:#1a9e5c; --ok-bg:#e8f7ef; --err:#c8342a; --err-bg:#fdecea; --warn:#a56a00; --warn-bg:#fff4de;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
+  .topbar{background:#111827;color:#fff;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;}
+  .topbar .brand{font-weight:700;font-size:15px;}
+  .topbar .role{font-size:11px;background:#1f2937;padding:4px 10px;border-radius:6px;color:#9ca3af;}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 24px;display:grid;grid-template-columns:1.6fr 1fr;gap:20px;}
+  h1{font-size:18px;margin:0 0 3px;}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 16px;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;}
+  .panel h2{font-size:13px;margin:0 0 12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;color:var(--muted);font-weight:600;padding:7px 8px;border-bottom:2px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.03em;}
+  td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr.selected{background:#eef4ff;}
+  tr:hover{background:#f7f9fd;cursor:pointer;}
+  .reason-code{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:var(--err-bg);color:var(--err);padding:2px 7px;border-radius:5px;}
+  .api-tag{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);display:block;margin-top:8px;}
+  .empty-state{color:var(--muted);font-size:13px;padding:24px;text-align:center;}
+  label{display:block;font-size:10px;font-weight:600;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.02em;}
+  select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fbfcfe;}
+  textarea{resize:vertical;min-height:56px;}
+  .btn{padding:9px 16px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand);width:100%;margin-top:14px;}
+  .btn-primary:disabled{background:#a9c3f5;border-color:#a9c3f5;cursor:not-allowed;}
+  .audit-item{border-left:3px solid var(--brand);padding:8px 12px;margin-bottom:10px;background:#f7f9fd;border-radius:0 6px 6px 0;}
+  .audit-item .who{font-weight:700;font-size:12px;}
+  .audit-item .when{font-size:10px;color:var(--muted);}
+  .audit-item .why{font-size:12px;margin-top:4px;}
+  .hidden{display:none !important;}
+  .toast{position:fixed;top:16px;right:16px;background:#111827;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">TelcoLane CSR Console</span>
+  <span class="role">role: csr · agent A. Sharma</span>
+</div>
+
+<div class="wrap">
+  <div>
+    <h1>Exception Queue</h1>
+    <p class="sub">Pending activation and plan-change rejections awaiting CSR review.</p>
+
+    <div class="panel">
+      <h2>Pending items (<span id="pendingCount">3</span>)</h2>
+      <table id="queueTable">
+        <thead><tr><th>Subscriber</th><th>Type</th><th>Reason code</th><th>Requested at</th></tr></thead>
+        <tbody id="queueBody">
+          <tr onclick="selectItem(this,'SUB-2026-004821','Activation','KYC_UNVERIFIED','2026-09-29 16:02')">
+            <td>SUB-2026-004821</td><td>Activation</td><td><span class="reason-code">KYC_UNVERIFIED</span></td><td>2026-09-29 16:02</td>
+          </tr>
+          <tr onclick="selectItem(this,'SUB-2026-004790','Plan change','MIN_TENURE_NOT_MET','2026-09-30 09:14')">
+            <td>SUB-2026-004790</td><td>Plan change</td><td><span class="reason-code">MIN_TENURE_NOT_MET</span></td><td>2026-09-30 09:14</td>
+          </tr>
+          <tr onclick="selectItem(this,'SUB-2026-004655','Activation','DEALER_INVALID','2026-09-30 10:47')">
+            <td>SUB-2026-004655</td><td>Activation</td><td><span class="reason-code">DEALER_INVALID</span></td><td>2026-09-30 10:47</td>
+          </tr>
+        </tbody>
+      </table>
+      <div id="emptyState" class="empty-state hidden">No pending exceptions. Queue is clear.</div>
+      <span class="api-tag">GET /api/csr/exceptions</span>
+    </div>
+  </div>
+
+  <div>
+    <h1>Override</h1>
+    <p class="sub">Select an item, then apply a reason-coded override.</p>
+
+    <div class="panel">
+      <div id="noSelection">
+        <p class="empty-state">Select a queue item to override.</p>
+      </div>
+
+      <div id="overrideForm" class="hidden">
+        <div class="row" style="font-size:13px;"><b id="selSubscriber">SUB-2026-004821</b></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Rejected reason: <span class="reason-code" id="selReason">KYC_UNVERIFIED</span></div>
+
+        <label for="overrideReason">Override reason code</label>
+        <select id="overrideReason" onchange="checkOverrideValid()">
+          <option value="">— select reason —</option>
+          <option value="MANUAL_KYC_VERIFIED">MANUAL_KYC_VERIFIED — CSR manually verified documents</option>
+          <option value="DEALER_EXCEPTION_APPROVED">DEALER_EXCEPTION_APPROVED — Regional exception granted</option>
+          <option value="TENURE_WAIVED">TENURE_WAIVED — Tenure requirement waived by CSR</option>
+        </select>
+
+        <label for="overrideNote">Note (optional)</label>
+        <textarea id="overrideNote" placeholder="Add context for the audit trail..."></textarea>
+
+        <button class="btn btn-primary" id="submitOverrideBtn" disabled onclick="submitOverride()">Submit override</button>
+        <span class="api-tag">POST /api/csr/exceptions/{id}/override</span>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>Audit trail — subscription history</h2>
+      <div id="auditTrail">
+        <div class="empty-state" style="padding:12px;">Select a subscriber to view its audit trail.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+  var selected = null;
+
+  function selectItem(row, subscriberId, type, reasonCode, requestedAt){
+    document.querySelectorAll('#queueBody tr').forEach(function(r){ r.classList.remove('selected'); });
+    row.classList.add('selected');
+    selected = {row: row, subscriberId: subscriberId, type: type, reasonCode: reasonCode};
+
+    document.getElementById('noSelection').classList.add('hidden');
+    document.getElementById('overrideForm').classList.remove('hidden');
+    document.getElementById('selSubscriber').textContent = subscriberId;
+    document.getElementById('selReason').textContent = reasonCode;
+    document.getElementById('overrideReason').value = '';
+    document.getElementById('overrideNote').value = '';
+    checkOverrideValid();
+
+    document.getElementById('auditTrail').innerHTML =
+      '<div class="audit-item"><div class="who">System · rule engine</div>' +
+      '<div class="when">' + requestedAt + '</div>' +
+      '<div class="why">' + type + ' rejected — ' + reasonCode + '</div></div>';
+  }
+
+  function checkOverrideValid(){
+    var val = document.getElementById('overrideReason').value;
+    document.getElementById('submitOverrideBtn').disabled = !val;
+  }
+
+  function submitOverride(){
+    if (!selected) return;
+    var reason = document.getElementById('overrideReason').value;
+    var note = document.getElementById('overrideNote').value;
+    var now = '2026-09-30 14:22';
+
+    selected.row.remove();
+    var count = document.querySelectorAll('#queueBody tr').length;
+    document.getElementById('pendingCount').textContent = count;
+    if (count === 0){ document.getElementById('emptyState').classList.remove('hidden'); }
+
+    var audit = document.getElementById('auditTrail');
+    var entry = document.createElement('div');
+    entry.className = 'audit-item';
+    entry.innerHTML = '<div class="who">A. Sharma (CSR) · override</div>' +
+      '<div class="when">' + now + '</div>' +
+      '<div class="why">' + reason + (note ? (' — ' + note) : '') + '</div>';
+    audit.prepend(entry);
+
+    document.getElementById('overrideForm').classList.add('hidden');
+    document.getElementById('noSelection').classList.remove('hidden');
+    selected = null;
+
+    showToast('Override applied — item removed from queue');
+  }
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    setTimeout(function(){ t.classList.add('hidden'); }, 2600);
+  }
+</script>
+</body>
+</html>

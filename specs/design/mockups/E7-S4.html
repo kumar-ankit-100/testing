@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TelcoLane Admin — Reporting Dashboard</title>
+<style>
+  :root{
+    --brand:#0b5fff; --bg:#eef1f7; --card:#fff; --text:#161c2b; --muted:#6b7686; --border:#dde2ec;
+    --ok:#1a9e5c; --err:#c8342a; --err-bg:#fdecea;
+    --c1:#0b5fff; --c2:#22b8cf; --c3:#f4a300; --c4:#7c5cf0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .topbar{background:#111827;color:#fff;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;}
+  .topbar .brand{font-weight:700;font-size:16px;}
+  .topbar .role{font-size:12px;background:#1f2937;padding:4px 10px;border-radius:6px;color:#9ca3af;}
+  .wrap{max-width:1280px;margin:0 auto;padding:24px 28px;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px;}
+  .toolbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;}
+  .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--muted);font-size:12px;cursor:pointer;padding:6px 12px;border-radius:6px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;min-height:240px;position:relative;}
+  .panel h2{font-size:14px;margin:0 0 4px;}
+  .api-tag{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);display:block;margin-bottom:14px;}
+  .state-layer{position:absolute;inset:0;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+  .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{font-size:12px;color:var(--muted);}
+  .error-layer{color:var(--err);}
+  .error-layer .box{background:var(--err-bg);border:1px solid #f3c7c3;border-radius:8px;padding:14px 20px;text-align:center;}
+  .error-layer .box .msg{font-size:12px;margin-top:4px;color:#7a2620;}
+  .retry-btn{margin-top:10px;padding:6px 14px;border-radius:6px;border:1px solid var(--err);background:#fff;color:var(--err);font-size:11px;cursor:pointer;}
+  .hidden{display:none !important;}
+
+  /* funnel */
+  .funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .funnel-label{width:120px;font-size:12px;color:var(--muted);}
+  .funnel-bar-track{flex:1;background:#f1f3f7;border-radius:5px;height:22px;overflow:hidden;}
+  .funnel-bar{height:100%;background:var(--c1);border-radius:5px;display:flex;align-items:center;justify-content:flex-end;color:#fff;font-size:11px;font-weight:700;padding-right:8px;}
+
+  /* churn */
+  .bar-chart{display:flex;align-items:flex-end;gap:14px;height:150px;padding-top:10px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .bar{width:100%;max-width:34px;background:var(--c3);border-radius:4px 4px 0 0;}
+  .bar-val{font-size:10px;color:var(--muted);margin-bottom:3px;}
+  .bar-month{font-size:10px;color:var(--muted);margin-top:6px;}
+
+  /* plan mix (donut via conic-gradient) */
+  .donut-wrap{display:flex;align-items:center;gap:20px;}
+  .donut{width:140px;height:140px;border-radius:50%;flex-shrink:0;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:8px;}
+  .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+  /* arpu trend (svg line) */
+  svg.trend{width:100%;height:150px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">TelcoLane Admin</span>
+  <span class="role">role: admin</span>
+</div>
+
+<div class="wrap">
+  <h1>Reporting Dashboard</h1>
+  <p class="sub">Activation funnel, churn, plan mix and ARPU trend across the subscriber base.</p>
+
+  <div class="toolbar">
+    <button class="btn-ghost" onclick="simulateLoading()">Reload all panels (loading demo)</button>
+    <button class="btn-ghost" onclick="simulateError()">Simulate error (plan mix)</button>
+  </div>
+
+  <div class="grid">
+
+    <!-- Activation funnel -->
+    <div class="panel">
+      <h2>Activation Funnel</h2>
+      <span class="api-tag">GET /api/admin/reports/activation-funnel</span>
+      <div id="funnelContent">
+        <div class="funnel-row"><span class="funnel-label">Registered</span><div class="funnel-bar-track"><div class="funnel-bar" style="width:100%">1,240</div></div></div>
+        <div class="funnel-row"><span class="funnel-label">KYC Verified</span><div class="funnel-bar-track"><div class="funnel-bar" style="width:81%;background:var(--c2);">1,006</div></div></div>
+        <div class="funnel-row"><span class="funnel-label">Dealer Validated</span><div class="funnel-bar-track"><div class="funnel-bar" style="width:74%;background:var(--c3);">918</div></div></div>
+        <div class="funnel-row"><span class="funnel-label">Activated</span><div class="funnel-bar-track"><div class="funnel-bar" style="width:68%;background:var(--c4);">847</div></div></div>
+      </div>
+      <div class="state-layer hidden" id="funnelLoading"><div class="spinner"></div><div class="loading-text">Loading activation funnel…</div></div>
+    </div>
+
+    <!-- Churn -->
+    <div class="panel">
+      <h2>Monthly Churn</h2>
+      <span class="api-tag">GET /api/admin/reports/churn</span>
+      <div id="churnContent" class="bar-chart">
+        <div class="bar-col"><span class="bar-val">3.1%</span><div class="bar" style="height:31%"></div><span class="bar-month">Apr</span></div>
+        <div class="bar-col"><span class="bar-val">2.8%</span><div class="bar" style="height:28%"></div><span class="bar-month">May</span></div>
+        <div class="bar-col"><span class="bar-val">3.6%</span><div class="bar" style="height:36%"></div><span class="bar-month">Jun</span></div>
+        <div class="bar-col"><span class="bar-val">4.2%</span><div class="bar" style="height:42%"></div><span class="bar-month">Jul</span></div>
+        <div class="bar-col"><span class="bar-val">3.4%</span><div class="bar" style="height:34%"></div><span class="bar-month">Aug</span></div>
+        <div class="bar-col"><span class="bar-val">2.9%</span><div class="bar" style="height:29%"></div><span class="bar-month">Sep</span></div>
+      </div>
+      <div class="state-layer hidden" id="churnLoading"><div class="spinner"></div><div class="loading-text">Loading churn report…</div></div>
+    </div>
+
+    <!-- Plan mix -->
+    <div class="panel">
+      <h2>Plan Mix</h2>
+      <span class="api-tag">GET /api/admin/reports/plan-mix</span>
+      <div id="planMixContent" class="donut-wrap">
+        <div class="donut" style="background:conic-gradient(var(--c1) 0% 46%, var(--c2) 46% 74%, var(--c3) 74% 92%, var(--c4) 92% 100%);"></div>
+        <div>
+          <div class="legend-item"><span class="swatch" style="background:var(--c1)"></span>Smart Saver 499 — 46%</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--c2)"></span>Value Combo 599 — 28%</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--c3)"></span>Data Max 799 — 18%</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--c4)"></span>Basic 299 — 8%</div>
+        </div>
+      </div>
+      <div class="state-layer hidden" id="planMixLoading"><div class="spinner"></div><div class="loading-text">Loading plan mix…</div></div>
+      <div class="state-layer error-layer hidden" id="planMixError">
+        <div class="box">
+          <div><b>Failed to load plan mix</b></div>
+          <div class="msg">HTTP 500 — GET /api/admin/reports/plan-mix timed out</div>
+          <button class="retry-btn" onclick="retryPlanMix()">Retry</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARPU trend -->
+    <div class="panel">
+      <h2>ARPU Trend <span style="font-size:10px;color:var(--muted);font-weight:400;">(stubbed)</span></h2>
+      <span class="api-tag">GET /api/admin/reports/arpu</span>
+      <div id="arpuContent">
+        <svg class="trend" viewBox="0 0 300 120" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#0b5fff" stroke-width="2.5"
+            points="10,80 60,70 110,74 160,55 210,48 260,38 290,32" />
+          <g fill="#0b5fff">
+            <circle cx="10" cy="80" r="3"/><circle cx="60" cy="70" r="3"/><circle cx="110" cy="74" r="3"/>
+            <circle cx="160" cy="55" r="3"/><circle cx="210" cy="48" r="3"/><circle cx="260" cy="38" r="3"/><circle cx="290" cy="32" r="3"/>
+          </g>
+          <text x="10" y="98" font-size="9" fill="#6b7686">Apr</text>
+          <text x="150" y="98" font-size="9" fill="#6b7686">Jul</text>
+          <text x="265" y="98" font-size="9" fill="#6b7686">Sep</text>
+        </svg>
+        <div style="text-align:right;font-size:12px;color:var(--muted);">Latest ARPU: <b style="color:var(--text)">₹312.40</b></div>
+      </div>
+      <div class="state-layer hidden" id="arpuLoading"><div class="spinner"></div><div class="loading-text">Loading ARPU trend…</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function simulateLoading(){
+    ['funnel','churn','arpu'].forEach(function(id){
+      document.getElementById(id + 'Loading').classList.remove('hidden');
+    });
+    setTimeout(function(){
+      ['funnel','churn','arpu'].forEach(function(id){
+        document.getElementById(id + 'Loading').classList.add('hidden');
+      });
+    }, 1400);
+  }
+
+  function simulateError(){
+    document.getElementById('planMixContent').classList.add('hidden');
+    document.getElementById('planMixError').classList.remove('hidden');
+  }
+
+  function retryPlanMix(){
+    document.getElementById('planMixError').classList.add('hidden');
+    document.getElementById('planMixLoading').classList.remove('hidden');
+    setTimeout(function(){
+      document.getElementById('planMixLoading').classList.add('hidden');
+      document.getElementById('planMixContent').classList.remove('hidden');
+    }, 1200);
+  }
+</script>
+</body>
+</html>

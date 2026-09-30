@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TelcoLane Admin — Plan Catalog</title>
+<style>
+  :root{
+    --brand:#0b5fff; --bg:#eef1f7; --card:#fff; --text:#161c2b; --muted:#6b7686; --border:#dde2ec;
+    --ok:#1a9e5c; --ok-bg:#e8f7ef; --draft-bg:#fff4de; --draft:#a56a00; --err:#c8342a; --err-bg:#fdecea;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .topbar{background:#111827;color:#fff;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;}
+  .topbar .brand{font-weight:700;font-size:16px;}
+  .topbar .role{font-size:12px;background:#1f2937;padding:4px 10px;border-radius:6px;color:#9ca3af;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 28px;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .panel-head h2{font-size:15px;margin:0;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.03em;}
+  td{padding:10px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+  .badge-published{background:var(--ok-bg);color:var(--ok);}
+  .badge-draft{background:var(--draft-bg);color:var(--draft);}
+  .btn{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .btn-primary:disabled{background:#a9c3f5;border-color:#a9c3f5;cursor:not-allowed;}
+  .btn-sm{padding:5px 10px;font-size:11px;}
+  .api-tag{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);display:block;margin-top:3px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.02em;}
+  input,select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fbfcfe;}
+  input:disabled{background:#f1f3f7;color:var(--muted);}
+  .lock-msg{grid-column:1/-1;background:var(--err-bg);border:1px solid #f3c7c3;color:#7a2620;font-size:12px;padding:9px 12px;border-radius:6px;}
+  .hidden{display:none !important;}
+  .toast{position:fixed;top:18px;right:18px;background:#111827;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">TelcoLane Admin</span>
+  <span class="role">role: admin</span>
+</div>
+
+<div class="wrap">
+  <h1>Plan Catalog</h1>
+  <p class="sub">Version history is append-only. A published plan version can never be edited — create a new draft instead.</p>
+
+  <!-- Version history -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Plan: Smart Saver 499</h2>
+      <div>
+        <button class="btn" onclick="document.getElementById('newDraftPanel').scrollIntoView({behavior:'smooth'})">+ New draft version</button>
+      </div>
+    </div>
+    <table id="versionTable">
+      <thead>
+        <tr><th>Version</th><th>Price</th><th>Validity</th><th>Data / Voice / SMS</th><th>Status</th><th>Effective from</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>v3</td><td>₹499.00</td><td>28 days</td><td>2GB/day · Unlimited · 100/day</td>
+          <td><span class="badge badge-published" id="v3badge">PUBLISHED</span></td>
+          <td>2026-08-01</td>
+          <td><button class="btn btn-sm" onclick="editPublished()">Edit</button></td>
+        </tr>
+        <tr>
+          <td>v2</td><td>₹499.00</td><td>28 days</td><td>1.5GB/day · Unlimited · 100/day</td>
+          <td><span class="badge badge-draft" style="background:#eef1f7;color:#6b7686;">SUPERSEDED</span></td>
+          <td>2026-05-01</td>
+          <td>—</td>
+        </tr>
+        <tr id="draftRow" class="hidden">
+          <td>v4</td><td id="draftPrice">₹549.00</td><td id="draftValidity">28 days</td><td id="draftQuota">2.5GB/day · Unlimited · 100/day</td>
+          <td><span class="badge badge-draft" id="v4badge">DRAFT</span></td>
+          <td>—</td>
+          <td><button class="btn btn-primary btn-sm" onclick="publishDraft()" id="publishBtn">Publish</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <span class="api-tag">GET /api/admin/plans</span>
+  </div>
+
+  <!-- Attempt to edit published version -->
+  <div class="panel hidden" id="editLockedPanel">
+    <div class="panel-head"><h2>Edit v3 (published)</h2></div>
+    <div class="form-grid">
+      <div><label>Name</label><input value="Smart Saver 499" disabled></div>
+      <div><label>Price (₹)</label><input value="499.00" disabled></div>
+      <div class="lock-msg">This version is published and immutable. To change price, data quota, or validity, create a new draft version from this one instead.</div>
+      <div style="grid-column:1/-1;display:flex;gap:10px;">
+        <button class="btn" onclick="document.getElementById('editLockedPanel').classList.add('hidden')">Cancel</button>
+        <button class="btn btn-primary" onclick="prefillDraftFromPublished()">Create draft from v3</button>
+      </div>
+    </div>
+    <span class="api-tag">PUT /api/admin/plans/{id} → 409 immutability error</span>
+  </div>
+
+  <!-- New draft form -->
+  <div class="panel" id="newDraftPanel">
+    <div class="panel-head"><h2>Create new draft version</h2></div>
+    <form class="form-grid" onsubmit="return createDraft(event)">
+      <div><label for="name">Name</label><input id="name" value="Smart Saver 499" required></div>
+      <div><label for="type">Type</label>
+        <select id="type"><option>PREPAID</option><option>POSTPAID</option></select>
+      </div>
+      <div><label for="price">Monthly price (₹)</label><input id="price" type="number" step="0.01" value="549.00" required></div>
+      <div><label for="validity">Validity (days)</label><input id="validity" type="number" value="28" required></div>
+      <div><label for="data">Data quota / day (GB)</label><input id="data" type="number" step="0.1" value="2.5" required></div>
+      <div><label for="sms">SMS / day</label><input id="sms" type="number" value="100" required></div>
+      <div style="grid-column:1/-1;">
+        <button type="submit" class="btn btn-primary">Create draft</button>
+        <span class="api-tag">POST /api/admin/plans</span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+  function editPublished(){
+    document.getElementById('editLockedPanel').classList.remove('hidden');
+    document.getElementById('editLockedPanel').scrollIntoView({behavior:'smooth'});
+  }
+  function prefillDraftFromPublished(){
+    document.getElementById('editLockedPanel').classList.add('hidden');
+    document.getElementById('newDraftPanel').scrollIntoView({behavior:'smooth'});
+  }
+  function createDraft(e){
+    e.preventDefault();
+    var price = parseFloat(document.getElementById('price').value).toFixed(2);
+    var validity = document.getElementById('validity').value;
+    var data = document.getElementById('data').value;
+    var sms = document.getElementById('sms').value;
+    document.getElementById('draftPrice').textContent = '₹' + price;
+    document.getElementById('draftValidity').textContent = validity + ' days';
+    document.getElementById('draftQuota').textContent = data + 'GB/day · Unlimited · ' + sms + '/day';
+    document.getElementById('draftRow').classList.remove('hidden');
+    showToast('Draft v4 created — 201 Created');
+    return false;
+  }
+  function publishDraft(){
+    document.getElementById('v4badge').textContent = 'PUBLISHED';
+    document.getElementById('v4badge').className = 'badge badge-published';
+    document.getElementById('publishBtn').outerHTML = '—';
+    showToast('Version v4 published (published: true)');
+  }
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    setTimeout(function(){ t.classList.add('hidden'); }, 2600);
+  }
+</script>
+</body>
+</html>
