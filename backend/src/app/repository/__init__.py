@@ -17,6 +17,7 @@ from app.repository.plan_repository import (
     get_published_version,
     list_versions,
     publish_plan_version,
+    update_draft_plan_version,
 )
 from app.repository.port_out_repository import (
     close_port_out_event,
@@ -35,10 +36,13 @@ from app.repository.state_transition_repository import (
     list_state_transitions_for_subscription,
 )
 from app.repository.subscriber_repository import (
+    activate_subscription,
     create_subscriber,
     create_subscription,
+    get_active_subscription_by_mobile,
     get_subscriber_by_id,
     get_subscriber_by_mobile,
+    get_subscription_by_subscriber_id,
 )
 from app.repository.user_repository import (
     create_user,
@@ -48,6 +52,7 @@ from app.repository.user_repository import (
 )
 
 __all__ = [
+    "activate_subscription",
     "activation_funnel_counts",
     "append_state_transition",
     "apply_schema",
@@ -61,10 +66,12 @@ __all__ = [
     "create_subscription",
     "create_user",
     "get_active_port_out_event",
+    "get_active_subscription_by_mobile",
     "get_dealer_by_code",
     "get_published_version",
     "get_subscriber_by_id",
     "get_subscriber_by_mobile",
+    "get_subscription_by_subscriber_id",
     "get_user_by_id",
     "get_user_by_mobile",
     "get_user_by_username",
@@ -75,4 +82,5 @@ __all__ = [
     "monthly_churn_rate",
     "plan_mix_distribution",
     "publish_plan_version",
+    "update_draft_plan_version",
 ]
