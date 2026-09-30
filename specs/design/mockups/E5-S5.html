@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TelcoLane — Manage Subscription</title>
+<style>
+  :root{
+    --brand:#0b5fff; --bg:#f4f6fb; --card:#fff; --text:#1a2233; --muted:#6b7686; --border:#e2e6ee;
+    --ok:#1a9e5c; --ok-bg:#e8f7ef; --warn:#a56a00; --warn-bg:#fff4de; --err:#c8342a; --err-bg:#fdecea;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--card);display:flex;flex-direction:column;}
+  header{background:var(--brand);color:#fff;padding:18px 20px;}
+  header h1{margin:0;font-size:18px;}
+  header p{margin:4px 0 0;font-size:12px;opacity:.85;}
+  main{padding:20px;flex:1;}
+  .card{border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .card h2{margin:0 0 12px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  .row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border);}
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--muted);} .row .v{font-weight:600;}
+  .status-pill{display:inline-flex;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+  .pill-active{background:var(--ok-bg);color:var(--ok);}
+  .pill-suspended{background:var(--warn-bg);color:var(--warn);}
+  .pill-portout{background:#eee7fb;color:#5b3ea6;}
+  .btn{width:100%;padding:12px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-warn{background:#fff;color:var(--warn);border:1px solid var(--warn);}
+  .btn-danger{background:#fff;color:var(--err);border:1px solid var(--err);}
+  .btn-ok{background:#fff;color:var(--ok);border:1px solid var(--ok);}
+  .api-tag{display:block;font-size:10px;color:var(--muted);margin-top:2px;margin-bottom:10px;font-family:ui-monospace,Menlo,monospace;text-align:center;}
+  .cooling-box{background:#eee7fb;border:1px solid #d9cdf5;border-radius:8px;padding:14px;margin-top:6px;}
+  .cooling-box .label{font-size:11px;color:#5b3ea6;text-transform:uppercase;letter-spacing:.03em;}
+  .cooling-box .date{font-size:17px;font-weight:800;color:#3f2b7a;margin-top:2px;}
+  .cooling-box .days{font-size:12px;color:#5b3ea6;margin-top:4px;}
+  .hidden{display:none !important;}
+  .toolbar{display:flex;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .btn-ghost{background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;}
+  footer{padding:14px 20px;text-align:center;font-size:11px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>TelcoLane</h1>
+    <p>Suspend, resume &amp; port-out</p>
+  </header>
+  <main>
+
+    <div class="toolbar">
+      <button class="btn-ghost" onclick="setState('ACTIVE')">Demo: ACTIVE</button>
+      <button class="btn-ghost" onclick="setState('SUSPENDED')">Demo: SUSPENDED</button>
+      <button class="btn-ghost" onclick="setState('PORT_OUT_REQUESTED')">Demo: PORT_OUT_REQUESTED</button>
+    </div>
+
+    <div class="card">
+      <h2>Subscription</h2>
+      <div class="row"><span class="k">Subscription ID</span><span class="v">SUBN-88213</span></div>
+      <div class="row"><span class="k">Plan</span><span class="v">Smart Saver 499</span></div>
+      <div class="row"><span class="k">State</span><span class="v"><span id="statePill" class="status-pill pill-active">ACTIVE</span></span></div>
+    </div>
+
+    <div class="card">
+      <h2>Actions</h2>
+
+      <button class="btn btn-warn" id="suspendBtn" onclick="doSuspend()">Suspend subscription</button>
+      <span class="api-tag">POST /api/subscriptions/{id}/suspend</span>
+
+      <button class="btn btn-ok hidden" id="resumeBtn" onclick="doResume()">Resume subscription</button>
+      <span class="api-tag hidden" id="resumeTag">POST /api/subscriptions/{id}/resume</span>
+
+      <button class="btn btn-danger" id="portOutBtn" onclick="doPortOut()">Request port-out</button>
+      <span class="api-tag">POST /api/subscriptions/{id}/port-out</span>
+
+      <div class="cooling-box hidden" id="coolingBox">
+        <div class="label">Port-out cooling period</div>
+        <div class="date" id="coolingEndDate">Ends 2026-10-07</div>
+        <div class="days">7-day cooling period · request submitted 2026-09-30</div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="cancelPortOut()">Cancel port-out</button>
+        <span class="api-tag" style="margin-bottom:0">POST /api/subscriptions/{id}/port-out/cancel</span>
+      </div>
+    </div>
+
+  </main>
+  <footer>Mock UI · TelcoLane consumer self-service portal</footer>
+</div>
+
+<script>
+  var state = 'ACTIVE';
+
+  function setState(s){
+    state = s;
+    render();
+  }
+
+  function render(){
+    var pill = document.getElementById('statePill');
+    var suspendBtn = document.getElementById('suspendBtn');
+    var resumeBtn = document.getElementById('resumeBtn');
+    var resumeTag = document.getElementById('resumeTag');
+    var portOutBtn = document.getElementById('portOutBtn');
+    var coolingBox = document.getElementById('coolingBox');
+
+    pill.className = 'status-pill';
+    if (state === 'ACTIVE'){
+      pill.textContent = 'ACTIVE'; pill.classList.add('pill-active');
+      suspendBtn.classList.remove('hidden');
+      resumeBtn.classList.add('hidden'); resumeTag.classList.add('hidden');
+      portOutBtn.classList.remove('hidden');
+      coolingBox.classList.add('hidden');
+    } else if (state === 'SUSPENDED'){
+      pill.textContent = 'SUSPENDED'; pill.classList.add('pill-suspended');
+      suspendBtn.classList.add('hidden');
+      resumeBtn.classList.remove('hidden'); resumeTag.classList.remove('hidden');
+      portOutBtn.classList.add('hidden');
+      coolingBox.classList.add('hidden');
+    } else if (state === 'PORT_OUT_REQUESTED'){
+      pill.textContent = 'PORT_OUT_REQUESTED'; pill.classList.add('pill-portout');
+      suspendBtn.classList.add('hidden');
+      resumeBtn.classList.add('hidden'); resumeTag.classList.add('hidden');
+      portOutBtn.classList.add('hidden');
+      coolingBox.classList.remove('hidden');
+    }
+  }
+
+  function doSuspend(){ setState('SUSPENDED'); }
+  function doResume(){ setState('ACTIVE'); }
+  function doPortOut(){ setState('PORT_OUT_REQUESTED'); }
+  function cancelPortOut(){ setState('ACTIVE'); }
+
+  render();
+</script>
+</body>
+</html>

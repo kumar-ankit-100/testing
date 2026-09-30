@@ -1,0 +1,2369 @@
+[
+  {
+    "id": "F001",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "SubscriberState enum defines exactly PENDING_KYC, ACTIVE, SUSPENDED, TERMINATED, PORT_OUT_REQUESTED, PORTED_OUT and no other values.",
+    "steps": [
+      "Inspect the SubscriberState enum definition",
+      "Assert the member set equals exactly the 6 documented states",
+      "Assert no additional or missing members exist"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F002",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "A declarative FSM transition table maps each valid (from_state, to_state) pair; calling transition(current_state, target_state) with a pair not in the table raises InvalidSubscriberStateException.",
+    "steps": [
+      "Call transition() with a documented valid pair and assert it succeeds",
+      "Call transition() with an undocumented pair (e.g. TERMINATED -> ACTIVE)",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F003",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "Domain types for Subscriber, Subscription, PlanVersion, BillingRecord, StateTransition, PortOutEvent, CSROverride, and DealerMaster are defined with typed fields (no Any), and money fields typed as Decimal.",
+    "steps": [
+      "Instantiate each domain type with valid typed data",
+      "Assert every monetary field's declared type is Decimal",
+      "Attempt to construct a monetary field with a float and assert it is rejected or coerced with a type error"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F004",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "The Types module has zero imports from Config, Repository, Service, API, or UI.",
+    "steps": [
+      "Run grep -rn 'from.*config|from.*repository|from.*service|from.*api|from.*ui' on the types module",
+      "Assert no matches are found"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F005",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "Unit tests instantiate each domain type with valid data and assert field types, including that monetary fields reject non-Decimal input.",
+    "steps": [
+      "Write a parametrized unit test over all 8 domain types",
+      "Assert successful construction with valid data",
+      "Assert a TypeError/ValidationError on a non-Decimal monetary value"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F006",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Config module exposes a typed settings object with fields for DB path, KYC stub flag values, dealer-fail code, and MNP stub flag values, loaded from environment variables with documented defaults.",
+    "steps": [
+      "Import the settings object without setting any env vars",
+      "Assert every field has a documented, non-null default value",
+      "Assert the field types are concrete (str/bool), not Any"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F007",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "SQLite connection is configured with PRAGMA journal_mode=WAL applied at startup.",
+    "steps": [
+      "Start the app against a temp SQLite file",
+      "Query 'PRAGMA journal_mode' on the connection",
+      "Assert the result is 'wal'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F008",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Config module imports only from Types (no Repository/Service/API/UI imports).",
+    "steps": [
+      "Run grep -rn 'from.*repository|from.*service|from.*api|from.*ui' on the config module",
+      "Assert no matches are found"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F009",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "A unit test asserts that an unset environment variable falls back to its documented default value.",
+    "steps": [
+      "Unset the KYC_STUB_FLAG env var",
+      "Load settings",
+      "Assert the resulting value equals the documented default"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F010",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "A unit test asserts that the dealer-fail trigger code and KYC/MNP stub flags are read as exact string/boolean constants usable by the activation service.",
+    "steps": [
+      "Set DEALER_FAIL_CODE=DEALER-FAIL in the environment",
+      "Load settings",
+      "Assert settings.dealer_fail_code == 'DEALER-FAIL' exactly"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F011",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Logger emits each log entry as a single JSON object with at minimum timestamp, level, message keys.",
+    "steps": [
+      "Call logger.info('test event')",
+      "Capture the emitted line",
+      "Parse it as JSON and assert timestamp, level, message keys are present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F012",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "A logged mobile number is masked to show only the last 4 digits (e.g., ******7890); the full unmasked number never appears in the emitted JSON.",
+    "steps": [
+      "Log an event with mobile_number='9876547890'",
+      "Capture the emitted JSON line",
+      "Assert the raw number is absent and a masked form ending in 7890 is present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F013",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "A logged Aadhaar reference and PAN reference are masked using the same partial-reveal rule and never appear unmasked in output.",
+    "steps": [
+      "Log an event containing an aadhaar_ref and a pan_ref value",
+      "Capture the emitted JSON line",
+      "Assert neither raw value appears as a substring"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F014",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "A unit test captures log output for a payload containing all three PII fields and asserts none of the raw values are present as substrings of the emitted JSON.",
+    "steps": [
+      "Log one event containing mobile_number, aadhaar_ref, and pan_ref together",
+      "Assert none of the three raw values appear in the captured output"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F015",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Logger module imports only from Types and Config.",
+    "steps": [
+      "Run grep -rn 'from.*repository|from.*api|from.*ui' on the logger module",
+      "Assert no matches are found"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F016",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "Every non-health API route requires an authenticated principal with a role; unauthenticated requests receive HTTP 401.",
+    "steps": [
+      "Call a protected route with no Authorization header",
+      "Assert response status is 401"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F017",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "A subscriber-role request to a CSR-only or admin-only endpoint receives HTTP 403.",
+    "steps": [
+      "Authenticate as a subscriber",
+      "Call an admin-only endpoint",
+      "Assert response status is 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F018",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "A subscriber requesting another subscriber's subscription data (by ID mismatch) receives HTTP 403.",
+    "steps": [
+      "Authenticate as subscriber A",
+      "Request subscriber B's subscription resource",
+      "Assert response status is 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F019",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "A CSR or admin principal can access endpoints scoped to their own role without a 403.",
+    "steps": [
+      "Authenticate as CSR",
+      "Call a CSR-scoped endpoint",
+      "Assert response status is not 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F020",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "B",
+    "description": "An integration test exercises all four cases above against a running test client.",
+    "steps": [
+      "Run an integration test suite covering unauthenticated, wrong-role, cross-subscriber, and correct-role cases",
+      "Assert all four expected outcomes"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F021",
+    "category": "functional",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "GET /health returns HTTP 200 with a JSON body containing a status: 'ok' field.",
+    "steps": [
+      "Call GET /health",
+      "Assert response status is 200",
+      "Assert response body contains status == 'ok'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F022",
+    "category": "performance",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "A test measures response latency and asserts it is under 1000ms.",
+    "steps": [
+      "Time a call to GET /health",
+      "Assert elapsed time < 1000ms"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F023",
+    "category": "functional",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "/health requires no authentication.",
+    "steps": [
+      "Call GET /health with no Authorization header",
+      "Assert response status is 200, not 401"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F024",
+    "category": "performance",
+    "story": "E1-S5",
+    "group": "B",
+    "description": "A test starts the app and calls /health immediately after startup completes, asserting success without retries beyond the documented backoff policy.",
+    "steps": [
+      "Start the application",
+      "Call GET /health immediately after startup signal",
+      "Assert 200 is returned within the documented retry/backoff budget"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F025",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Repository exposes create_subscriber, get_subscriber_by_id, and get_subscriber_by_mobile functions backed by SQLite.",
+    "steps": [
+      "Call create_subscriber with valid data",
+      "Call get_subscriber_by_id and get_subscriber_by_mobile",
+      "Assert both return the same created record"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F026",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "A partial unique index exists on (mobile_number) restricted to state=ACTIVE, enforcing at most one ACTIVE subscription per mobile number at the database level.",
+    "steps": [
+      "Inspect the SQLite schema for the partial unique index",
+      "Assert the index expression is restricted to state='ACTIVE'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F027",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "DealerMaster table is seeded with at least 5 valid dealer codes plus the DEALER-FAIL sentinel code on application startup/migration.",
+    "steps": [
+      "Run the migration/seed step",
+      "Query the DealerMaster table",
+      "Assert at least 5 valid codes and the DEALER-FAIL sentinel are present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F028",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "A unit test inserts two subscriptions with the same mobile number both attempting ACTIVE state and asserts the second raises a database integrity error.",
+    "steps": [
+      "Insert subscription 1 with mobile X in ACTIVE state",
+      "Attempt to insert subscription 2 with mobile X in ACTIVE state",
+      "Assert an IntegrityError is raised on the second insert"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F029",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Repository module imports only from Types and Config.",
+    "steps": [
+      "Run grep -rn 'from.*service|from.*api|from.*ui' on the repository module",
+      "Assert no matches are found"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F030",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Registering with a valid mobile number, identity-proof reference, and plan type creates a subscription in PENDING_KYC state.",
+    "steps": [
+      "Call register() with valid inputs",
+      "Fetch the created subscription",
+      "Assert its state is PENDING_KYC"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F031",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Registering a mobile number that already has an ACTIVE subscription is rejected with a specific error (not a generic 500).",
+    "steps": [
+      "Create an ACTIVE subscription for mobile X",
+      "Call register() again for mobile X",
+      "Assert a specific DuplicateActiveSubscriptionError is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F032",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Registering with a malformed mobile number (not matching the expected digit pattern) is rejected before any database write.",
+    "steps": [
+      "Call register() with an invalid mobile string",
+      "Assert a validation error is raised",
+      "Assert no row was written to the subscriber table"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F033",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "A unit test verifies the identity-proof reference is persisted but is masked when logged.",
+    "steps": [
+      "Call register() with an identity-proof reference",
+      "Assert the raw reference is stored in the DB",
+      "Assert any log line emitted during registration masks the reference"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F034",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with KYC-verified flag, a valid dealer code, and MNP-success flag transitions the subscription to ACTIVE and appends a StateTransition record.",
+    "steps": [
+      "Call activate() with all-pass stub flags",
+      "Assert the subscription state is ACTIVE",
+      "Assert a StateTransition record was appended for PENDING_KYC -> ACTIVE"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F035",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with an unverified KYC flag is rejected with reason code KYC_UNVERIFIED and the subscription remains PENDING_KYC.",
+    "steps": [
+      "Call activate() with kyc=not-verified",
+      "Assert the raised/returned error reason code is KYC_UNVERIFIED",
+      "Assert the subscription state is still PENDING_KYC"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F036",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with dealer code DEALER-FAIL is rejected with reason code DEALER_INVALID and the subscription remains PENDING_KYC.",
+    "steps": [
+      "Call activate() with dealer_code='DEALER-FAIL'",
+      "Assert the reason code is DEALER_INVALID",
+      "Assert the subscription state is still PENDING_KYC"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F037",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Activation with the MNP-fail flag is rejected with reason code MNP_FAILED and the subscription remains PENDING_KYC.",
+    "steps": [
+      "Call activate() with mnp=fail",
+      "Assert the reason code is MNP_FAILED",
+      "Assert the subscription state is still PENDING_KYC"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F038",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "Attempting to activate a subscription that is not in PENDING_KYC (e.g., already ACTIVE) raises InvalidSubscriberStateException.",
+    "steps": [
+      "Activate a subscription successfully once",
+      "Call activate() again on the now-ACTIVE subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F039",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "D",
+    "description": "A test attempts to activate two registrations for the same mobile number concurrently/sequentially and asserts only one reaches ACTIVE (double-activation race, NFR-07).",
+    "steps": [
+      "Register two subscriptions for the same mobile number",
+      "Attempt to activate both",
+      "Assert exactly one ends ACTIVE and the other fails with a duplicate/integrity error"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F040",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/register with valid input returns HTTP 201 with the new subscriber ID and state PENDING_KYC.",
+    "steps": [
+      "POST /api/subscribers/register with valid payload",
+      "Assert response status is 201",
+      "Assert body contains subscriber_id and state == 'PENDING_KYC'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F041",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/{id}/activate with all stub flags passing returns HTTP 200 with state ACTIVE.",
+    "steps": [
+      "POST /api/subscribers/{id}/activate with all-pass flags",
+      "Assert response status is 200",
+      "Assert body state == 'ACTIVE'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F042",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/{id}/activate with a failing stub flag returns HTTP 422 with a machine-readable reason code (KYC_UNVERIFIED, DEALER_INVALID, or MNP_FAILED).",
+    "steps": [
+      "POST /api/subscribers/{id}/activate with a failing flag",
+      "Assert response status is 422",
+      "Assert body contains one of the three documented reason codes"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F043",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "POST /api/subscribers/{id}/activate on an already-ACTIVE subscriber returns HTTP 409.",
+    "steps": [
+      "Activate a subscriber successfully",
+      "POST /activate again on the same subscriber",
+      "Assert response status is 409"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F044",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "All requests/responses are validated against typed request/response models (no untyped dicts).",
+    "steps": [
+      "Inspect the route handler signatures",
+      "Assert request and response bodies use typed Pydantic models, not raw dict"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F045",
+    "category": "ui",
+    "story": "E2-S5",
+    "group": "F",
+    "description": "Registration form collects mobile number, identity-proof reference, and plan type, and submits to the registration endpoint.",
+    "steps": [
+      "Fill in mobile number, identity-proof reference, and plan type",
+      "Submit the form",
+      "Assert a POST to /api/subscribers/register is made with those values"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F046",
+    "category": "ui",
+    "story": "E2-S5",
+    "group": "F",
+    "description": "On activation failure, the UI displays the specific reason code/message returned by the API (e.g., 'KYC not verified').",
+    "steps": [
+      "Trigger an activation call that returns KYC_UNVERIFIED",
+      "Assert the UI renders the corresponding message"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F047",
+    "category": "ui",
+    "story": "E2-S5",
+    "group": "F",
+    "description": "On activation success, the UI displays state ACTIVE.",
+    "steps": [
+      "Trigger a successful activation call",
+      "Assert the UI renders state ACTIVE"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F048",
+    "category": "ui",
+    "story": "E2-S5",
+    "group": "F",
+    "description": "The layout renders correctly (no horizontal overflow, controls usable) at both a 375px mobile viewport and a 1280px desktop viewport, verified by a Playwright test.",
+    "steps": [
+      "Load the page at a 375px viewport and assert no horizontal scroll/overflow",
+      "Load the page at a 1280px viewport and assert the form remains usable"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F049",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Repository exposes create_plan_version, publish_plan_version, get_published_version, and list_versions functions.",
+    "steps": [
+      "Call each of the four functions against a test DB",
+      "Assert each returns the expected shape without error"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F050",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Calling any update/delete operation against a row already marked published=true raises an error at the repository level (no UPDATE statement executed against published rows).",
+    "steps": [
+      "Publish a plan version",
+      "Attempt to call an update function against that version",
+      "Assert an error is raised and no UPDATE was executed"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F051",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "list_versions returns all historical versions for a plan in ascending version-number order, none of them deleted.",
+    "steps": [
+      "Create 3 versions of a plan across time",
+      "Call list_versions",
+      "Assert all 3 are returned in ascending version order"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F052",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "A unit test attempts to mutate a published plan version's price field directly and asserts it fails.",
+    "steps": [
+      "Publish a version with price P",
+      "Attempt to directly mutate its price field",
+      "Assert the operation fails and price remains P"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F053",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "C",
+    "description": "Creating a new plan starts an unpublished draft version at version number 1.",
+    "steps": [
+      "Call create_plan()",
+      "Assert the resulting version has version_number == 1 and published == False"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F054",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "C",
+    "description": "Publishing a draft version marks it published=true and makes it the active version returned by get_published_version.",
+    "steps": [
+      "Publish a draft version",
+      "Call get_published_version",
+      "Assert it returns the just-published version"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F055",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "C",
+    "description": "Attempting to edit a published version's price or terms raises a specific PlanVersionImmutableError rather than succeeding.",
+    "steps": [
+      "Publish a version",
+      "Call the edit function on it",
+      "Assert PlanVersionImmutableError is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F056",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "C",
+    "description": "Requesting a change to a published plan instead creates a new draft version (version number incremented) with the requested fields, leaving the prior published version unchanged and retrievable.",
+    "steps": [
+      "Publish version 1",
+      "Request a change producing version 2 as a new draft",
+      "Assert version 1 is unchanged and retrievable, and version 2 exists as a draft"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F057",
+    "category": "security",
+    "story": "E3-S2",
+    "group": "C",
+    "description": "Only an admin-role principal can create or publish a plan version; a non-admin attempt is rejected.",
+    "steps": [
+      "Call create_plan()/publish() as a non-admin principal",
+      "Assert an authorization error is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F058",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "POST /api/admin/plans (admin role) creates a draft plan version and returns HTTP 201.",
+    "steps": [
+      "POST /api/admin/plans as admin with valid payload",
+      "Assert response status is 201"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F059",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "POST /api/admin/plans/{id}/publish publishes a draft and returns HTTP 200 with published: true.",
+    "steps": [
+      "POST /api/admin/plans/{id}/publish",
+      "Assert response status is 200 and body.published == true"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F060",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "PUT /api/admin/plans/{id} on an already-published version returns HTTP 409 with an immutability error message.",
+    "steps": [
+      "Publish a version",
+      "PUT /api/admin/plans/{id} attempting to edit it",
+      "Assert response status is 409"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F061",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "GET /api/admin/plans returns the full version history including superseded versions.",
+    "steps": [
+      "Create and publish multiple versions",
+      "GET /api/admin/plans",
+      "Assert the response includes every version, not just the latest"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F062",
+    "category": "security",
+    "story": "E3-S3",
+    "group": "D",
+    "description": "A non-admin principal calling any of the above endpoints receives HTTP 403.",
+    "steps": [
+      "Call each endpoint as a non-admin principal",
+      "Assert response status is 403 in every case"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F063",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "UI lists all plan versions for a plan with a visible published/draft badge per version.",
+    "steps": [
+      "Load the plan catalog screen",
+      "Assert each listed version shows a published or draft badge"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F064",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "Admin can submit a form to create a new draft version from the current published version's fields.",
+    "steps": [
+      "Click 'create new version'",
+      "Assert the form is pre-filled from the published version and submits successfully"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F065",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "Attempting to edit a field on a published version in the UI is disabled/blocked, with an inline message directing the admin to create a new version instead.",
+    "steps": [
+      "Attempt to edit a field on a published version row",
+      "Assert the input is disabled and an inline message appears"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F066",
+    "category": "ui",
+    "story": "E3-S4",
+    "group": "E",
+    "description": "Publishing a draft from the UI updates the visible published badge without a full page reload error.",
+    "steps": [
+      "Click 'publish' on a draft version",
+      "Assert the badge updates to 'published' without a page error"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F067",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "Repository exposes create_billing_record and list_billing_records_for_subscription; no update_billing_record or delete_billing_record function exists.",
+    "steps": [
+      "Inspect the repository module's public functions",
+      "Assert create/list exist and no update/delete function is defined"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F068",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "Monetary columns are stored and retrieved as Decimal, never float, verified by a unit test comparing exact Decimal equality after round-trip.",
+    "steps": [
+      "Create a billing record with a Decimal amount",
+      "Fetch it back",
+      "Assert exact Decimal equality (no float rounding drift)"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F069",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "Attempting to run a raw UPDATE or DELETE against the billing_records table (e.g., via a direct SQL statement in a test) either fails via a DB constraint/trigger or is asserted absent from the codebase.",
+    "steps": [
+      "Search the codebase for UPDATE/DELETE statements against billing_records",
+      "Assert none exist outside of test fixtures/teardown"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F070",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "B",
+    "description": "A unit test creates two billing records for the same subscription and asserts both remain retrievable (no overwrite).",
+    "steps": [
+      "Create billing record 1 and billing record 2 for the same subscription",
+      "Call list_billing_records_for_subscription",
+      "Assert both records are present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F071",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "C",
+    "description": "A plan change exactly at a billing-cycle boundary produces a pro-rata charge of 0.00 for the boundary day attribution per the documented formula.",
+    "steps": [
+      "Call calculate_pro_rata() with a change date equal to the cycle boundary",
+      "Assert the returned charge equals Decimal('0.00')"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F072",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "C",
+    "description": "A plan change mid-cycle in a 28-day February (non-leap year) and in a 29-day February (leap year, e.g., 2028) both produce correct, independently-asserted pro-rata amounts using the actual days-in-month for that year.",
+    "steps": [
+      "Call calculate_pro_rata() for a mid-February 2025 change (28 days)",
+      "Call calculate_pro_rata() for a mid-February 2028 change (29 days)",
+      "Assert each result matches the expected value for its respective days-in-month"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F073",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "C",
+    "description": "The calculated charges_total is always >= 0 for every generated test case (NFR-08 invariant), including a downgrade scenario that could naively produce a negative credit-only figure.",
+    "steps": [
+      "Run a table of upgrade and downgrade scenarios including a credit-heavy downgrade",
+      "Assert charges_total >= 0 for every scenario"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F074",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "C",
+    "description": "All intermediate and final amounts are Decimal typed; a static/type check confirms no float is used in the calculation module.",
+    "steps": [
+      "Run mypy/static check over the pro-rata module",
+      "Assert no float literal or float-typed variable is used for money"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F075",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "C",
+    "description": "A unit test table-drives at least 6 boundary-date scenarios including the leap-year case and asserts exact expected Decimal values.",
+    "steps": [
+      "Define 6+ scenarios covering month-start, month-end, and leap-year February",
+      "Run calculate_pro_rata() for each",
+      "Assert each result equals its exact expected Decimal value"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F076",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A plan-change request on a subscription younger than the configured minimum-tenure period is rejected with reason code MIN_TENURE_NOT_MET and no BillingRecord is created.",
+    "steps": [
+      "Create a subscription younger than the minimum-tenure period",
+      "Call commit_plan_change()",
+      "Assert reason code MIN_TENURE_NOT_MET and no BillingRecord was created"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F077",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A plan-change request on a SUSPENDED subscription is rejected with a visible reason code and no BillingRecord is created.",
+    "steps": [
+      "Suspend a subscription",
+      "Call commit_plan_change()",
+      "Assert rejection with a visible reason code and no BillingRecord created"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F078",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A preview call returns the computed pro-rata amount without persisting a BillingRecord or changing the subscription's plan.",
+    "steps": [
+      "Call preview_plan_change() on an eligible subscription",
+      "Assert the pro-rata amount is returned",
+      "Assert no BillingRecord exists and the subscription's plan is unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F079",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "A commit call on an eligible ACTIVE subscription past minimum tenure updates the subscription's current plan and persists exactly one new BillingRecord matching the previewed amount.",
+    "steps": [
+      "Preview a plan change",
+      "Commit the same plan change",
+      "Assert the plan is updated and exactly one matching BillingRecord was created"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F080",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "E",
+    "description": "Two consecutive commits for the same subscription each produce their own independent BillingRecord (append-only), and the prior record is never modified.",
+    "steps": [
+      "Commit a plan change",
+      "Commit a second plan change on the same subscription",
+      "Assert two independent BillingRecords exist and the first is unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F081",
+    "category": "functional",
+    "story": "E4-S4",
+    "group": "F",
+    "description": "POST /api/subscriptions/{id}/plan-change/preview returns HTTP 200 with the computed pro-rata amount and does not mutate state.",
+    "steps": [
+      "POST the preview endpoint on an eligible subscription",
+      "Assert response status is 200 with a pro-rata amount",
+      "Assert no state mutation occurred"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F082",
+    "category": "functional",
+    "story": "E4-S4",
+    "group": "F",
+    "description": "POST /api/subscriptions/{id}/plan-change/commit on an eligible subscription returns HTTP 200 with the new plan and created billing record ID.",
+    "steps": [
+      "POST the commit endpoint on an eligible subscription",
+      "Assert response status is 200 with new plan and billing_record_id"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F083",
+    "category": "functional",
+    "story": "E4-S4",
+    "group": "F",
+    "description": "Commit on a subscription failing minimum tenure returns HTTP 422 with reason code MIN_TENURE_NOT_MET.",
+    "steps": [
+      "POST the commit endpoint on a too-young subscription",
+      "Assert response status is 422 with reason code MIN_TENURE_NOT_MET"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F084",
+    "category": "functional",
+    "story": "E4-S4",
+    "group": "F",
+    "description": "Commit on a SUSPENDED subscription returns HTTP 409 with a visible reason code.",
+    "steps": [
+      "POST the commit endpoint on a SUSPENDED subscription",
+      "Assert response status is 409 with a visible reason code"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F085",
+    "category": "security",
+    "story": "E4-S4",
+    "group": "F",
+    "description": "A subscriber calling these endpoints for a subscription that is not their own receives HTTP 403.",
+    "steps": [
+      "Authenticate as subscriber A and call the endpoints for subscriber B's subscription",
+      "Assert response status is 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F086",
+    "category": "ui",
+    "story": "E4-S5",
+    "group": "G",
+    "description": "Selecting a target plan calls preview and displays the pro-rata amount before any commit action is available.",
+    "steps": [
+      "Select a target plan in the UI",
+      "Assert a preview call fires and the pro-rata amount is displayed before commit is enabled"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F087",
+    "category": "ui",
+    "story": "E4-S5",
+    "group": "G",
+    "description": "Confirming triggers commit and displays the updated plan and a confirmation of the new billing record.",
+    "steps": [
+      "Click confirm after preview",
+      "Assert a commit call fires and the UI shows the updated plan and billing confirmation"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F088",
+    "category": "ui",
+    "story": "E4-S5",
+    "group": "G",
+    "description": "A minimum-tenure or suspended-state rejection displays the exact reason code/message returned by the API.",
+    "steps": [
+      "Trigger a commit that returns MIN_TENURE_NOT_MET",
+      "Assert the UI renders that exact reason message"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F089",
+    "category": "ui",
+    "story": "E4-S5",
+    "group": "G",
+    "description": "The screen is usable at a 375px mobile viewport without layout breakage, verified by a Playwright test.",
+    "steps": [
+      "Load the screen at a 375px viewport",
+      "Assert no horizontal overflow and all controls remain clickable"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F090",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "Repository exposes append_state_transition and list_state_transitions_for_subscription; no update/delete function exists for state transitions.",
+    "steps": [
+      "Inspect the repository module's public functions",
+      "Assert append/list exist and no update/delete function is defined"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F091",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "Repository exposes create_port_out_event, get_active_port_out_event, and close_port_out_event (closing sets an end status, it does not delete the row).",
+    "steps": [
+      "Create a port-out event, fetch it as active, then close it",
+      "Assert the row still exists with an end status set, not deleted"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F092",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "A unit test appends 3 state transitions for one subscription and asserts all 3 remain retrievable in chronological order.",
+    "steps": [
+      "Append 3 state transitions for one subscription",
+      "Call list_state_transitions_for_subscription",
+      "Assert all 3 are returned in chronological order"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F093",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "B",
+    "description": "create_port_out_event stores the request timestamp and computes/stores the cooling-period end timestamp exactly 7 days later.",
+    "steps": [
+      "Create a port-out event at timestamp T",
+      "Assert the stored cooling-period end equals T + 7 days exactly"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F094",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Suspending an ACTIVE subscription transitions it to SUSPENDED and appends a StateTransition record.",
+    "steps": [
+      "Call suspend() on an ACTIVE subscription",
+      "Assert state is SUSPENDED and a StateTransition record was appended"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F095",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Resuming a SUSPENDED subscription transitions it back to ACTIVE and appends a StateTransition record.",
+    "steps": [
+      "Call resume() on a SUSPENDED subscription",
+      "Assert state is ACTIVE and a StateTransition record was appended"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F096",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Attempting to suspend a subscription that is not ACTIVE (e.g., already SUSPENDED or PENDING_KYC) raises InvalidSubscriberStateException.",
+    "steps": [
+      "Call suspend() on a PENDING_KYC subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F097",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "E",
+    "description": "Attempting to resume a subscription that is not SUSPENDED raises InvalidSubscriberStateException.",
+    "steps": [
+      "Call resume() on an ACTIVE subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F098",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Requesting port-out on an ACTIVE subscription transitions it to PORT_OUT_REQUESTED, creates a PortOutEvent, and appends a StateTransition record.",
+    "steps": [
+      "Call request_port_out() on an ACTIVE subscription",
+      "Assert state is PORT_OUT_REQUESTED, a PortOutEvent exists, and a StateTransition was appended"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F099",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Cancelling a port-out request within the 7-day window returns the subscription to ACTIVE and closes the PortOutEvent with status CANCELLED_WITHIN_WINDOW.",
+    "steps": [
+      "Request port-out, then cancel within 7 days",
+      "Assert state returns to ACTIVE and the PortOutEvent status is CANCELLED_WITHIN_WINDOW"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F100",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Finalizing a port-out request after the 7-day window has elapsed transitions the subscription to PORTED_OUT and closes the PortOutEvent with status FINALIZED.",
+    "steps": [
+      "Request port-out, advance time past 7 days, then finalize",
+      "Assert state is PORTED_OUT and the PortOutEvent status is FINALIZED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F101",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Attempting to finalize a port-out request before the 7-day window has elapsed is rejected with a specific reason code.",
+    "steps": [
+      "Request port-out, then finalize before 7 days have elapsed",
+      "Assert rejection with a specific reason code (e.g., COOLING_PERIOD_ACTIVE)"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F102",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "E",
+    "description": "Requesting port-out on a subscription that is not ACTIVE raises InvalidSubscriberStateException.",
+    "steps": [
+      "Call request_port_out() on a SUSPENDED subscription",
+      "Assert InvalidSubscriberStateException is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F103",
+    "category": "functional",
+    "story": "E5-S4",
+    "group": "F",
+    "description": "POST /api/subscriptions/{id}/suspend on an ACTIVE subscription returns HTTP 200 with state SUSPENDED.",
+    "steps": [
+      "POST /suspend on an ACTIVE subscription",
+      "Assert response status 200 and body state == 'SUSPENDED'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F104",
+    "category": "functional",
+    "story": "E5-S4",
+    "group": "F",
+    "description": "POST /api/subscriptions/{id}/resume on a SUSPENDED subscription returns HTTP 200 with state ACTIVE.",
+    "steps": [
+      "POST /resume on a SUSPENDED subscription",
+      "Assert response status 200 and body state == 'ACTIVE'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F105",
+    "category": "functional",
+    "story": "E5-S4",
+    "group": "F",
+    "description": "POST /api/subscriptions/{id}/port-out returns HTTP 200 with state PORT_OUT_REQUESTED and a cooling-period end date in the response body.",
+    "steps": [
+      "POST /port-out on an ACTIVE subscription",
+      "Assert response status 200, state == 'PORT_OUT_REQUESTED', and cooling_period_end is present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F106",
+    "category": "functional",
+    "story": "E5-S4",
+    "group": "F",
+    "description": "POST /api/subscriptions/{id}/port-out/cancel within the window returns HTTP 200 with state ACTIVE.",
+    "steps": [
+      "POST /port-out then /port-out/cancel within the window",
+      "Assert response status 200 and body state == 'ACTIVE'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F107",
+    "category": "functional",
+    "story": "E5-S4",
+    "group": "F",
+    "description": "POST /api/subscriptions/{id}/port-out/finalize before the window elapses returns HTTP 422 with a specific reason code.",
+    "steps": [
+      "POST /port-out then /port-out/finalize before 7 days elapse",
+      "Assert response status 422 with a specific reason code"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F108",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "G",
+    "description": "Suspend and resume buttons are visible only when the corresponding action is valid for the subscription's current state.",
+    "steps": [
+      "Load the screen for an ACTIVE subscription and assert suspend is visible, resume is not",
+      "Load the screen for a SUSPENDED subscription and assert the inverse"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F109",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "G",
+    "description": "Requesting port-out displays the 7-day cooling-period end date returned by the API.",
+    "steps": [
+      "Click 'request port-out'",
+      "Assert the displayed cooling-period end date matches the API response"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F110",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "G",
+    "description": "A 'cancel port-out' action is available and calls the cancel endpoint while within the window.",
+    "steps": [
+      "With an active port-out request, click 'cancel port-out'",
+      "Assert the cancel endpoint is called and the UI reflects state ACTIVE"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F111",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "G",
+    "description": "The screen renders correctly at a 375px mobile viewport, verified by a Playwright test.",
+    "steps": [
+      "Load the screen at a 375px viewport",
+      "Assert no horizontal overflow and all controls remain usable"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F112",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "B",
+    "description": "Repository exposes create_csr_override and list_csr_overrides_for_subscription; no update/delete function exists.",
+    "steps": [
+      "Inspect the repository module's public functions",
+      "Assert create/list exist and no update/delete function is defined"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F113",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "B",
+    "description": "Every CSROverride record stores a non-null actor (CSR user ID), a non-null timestamp, and a non-null reason code.",
+    "steps": [
+      "Create a CSROverride record",
+      "Assert actor, timestamp, and reason_code are all non-null on the stored row"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F114",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "B",
+    "description": "A unit test creates two overrides for the same subscription and asserts both remain retrievable independently.",
+    "steps": [
+      "Create override 1 and override 2 for the same subscription",
+      "Call list_csr_overrides_for_subscription",
+      "Assert both are present and independent"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F115",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "F",
+    "description": "A CSR can override a rejected activation (e.g., DEALER_INVALID) supplying a reason code, resulting in the subscription transitioning to ACTIVE and a CSROverride record being created.",
+    "steps": [
+      "Produce a DEALER_INVALID rejected activation",
+      "Call override_activation() as CSR with a reason code",
+      "Assert the subscription becomes ACTIVE and a CSROverride record was created"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F116",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "F",
+    "description": "A CSR can override a rejected plan-change (e.g., MIN_TENURE_NOT_MET), resulting in the plan change being committed and a CSROverride record being created.",
+    "steps": [
+      "Produce a MIN_TENURE_NOT_MET rejected plan change",
+      "Call override_plan_change() as CSR with a reason code",
+      "Assert the plan change commits and a CSROverride record was created"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F117",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "F",
+    "description": "Attempting an override without a reason code is rejected before any state change or override record is written.",
+    "steps": [
+      "Call an override function with no reason code",
+      "Assert rejection and that no state change or CSROverride record was written"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F118",
+    "category": "security",
+    "story": "E6-S2",
+    "group": "F",
+    "description": "A non-CSR principal (subscriber or dealer-context) attempting an override is rejected.",
+    "steps": [
+      "Call an override function as a subscriber principal",
+      "Assert an authorization error is raised"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F119",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "F",
+    "description": "Every override, successful or not, that reaches the persistence step logs a structured entry including the masked actor and reason code.",
+    "steps": [
+      "Perform a successful override",
+      "Capture the emitted log line",
+      "Assert it is structured JSON containing a masked actor and the reason code"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F120",
+    "category": "functional",
+    "story": "E6-S3",
+    "group": "G",
+    "description": "GET /api/csr/exceptions (CSR role) returns the list of subscriptions with a rejected activation or plan-change awaiting review.",
+    "steps": [
+      "Produce one rejected activation and one rejected plan-change",
+      "GET /api/csr/exceptions as CSR",
+      "Assert both appear in the response list"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F121",
+    "category": "functional",
+    "story": "E6-S3",
+    "group": "G",
+    "description": "POST /api/csr/exceptions/{id}/override with a valid reason code returns HTTP 200 and the resulting subscription/plan state.",
+    "steps": [
+      "POST override with a valid reason code",
+      "Assert response status 200 with the resulting state"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F122",
+    "category": "functional",
+    "story": "E6-S3",
+    "group": "G",
+    "description": "POST /api/csr/exceptions/{id}/override without a reason code returns HTTP 422.",
+    "steps": [
+      "POST override with no reason code",
+      "Assert response status 422"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F123",
+    "category": "security",
+    "story": "E6-S3",
+    "group": "G",
+    "description": "A subscriber-role principal calling either endpoint receives HTTP 403.",
+    "steps": [
+      "Call both endpoints as a subscriber principal",
+      "Assert response status 403 in both cases"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F124",
+    "category": "ui",
+    "story": "E6-S4",
+    "group": "H",
+    "description": "Exception queue list displays each pending item's rejection reason code and subscriber identifier.",
+    "steps": [
+      "Load the exception queue screen",
+      "Assert each row shows its rejection reason code and subscriber identifier"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F125",
+    "category": "ui",
+    "story": "E6-S4",
+    "group": "H",
+    "description": "Submitting an override requires selecting/entering a reason code; the submit action is disabled until one is provided.",
+    "steps": [
+      "Open the override dialog without entering a reason code",
+      "Assert the submit button is disabled",
+      "Enter a reason code and assert it becomes enabled"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F126",
+    "category": "ui",
+    "story": "E6-S4",
+    "group": "H",
+    "description": "After a successful override, the item is removed from the pending queue and an audit entry (actor + timestamp + reason) is visible in the subscription's history view.",
+    "steps": [
+      "Submit a successful override",
+      "Assert the item disappears from the pending queue",
+      "Open the subscription's history view and assert the audit entry is visible"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F127",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "Repository exposes activation_funnel_counts, monthly_churn_rate, plan_mix_distribution, and arpu_trend query functions.",
+    "steps": [
+      "Call each of the four functions against a test DB with seeded data",
+      "Assert each returns without error and in the expected shape"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F128",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "activation_funnel_counts returns counts per funnel stage (registered, KYC-passed, dealer-passed, MNP-passed, activated) that sum consistently (each stage count <= the prior stage count).",
+    "steps": [
+      "Seed data covering all funnel stages",
+      "Call activation_funnel_counts",
+      "Assert each stage's count is <= the prior stage's count"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F129",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "monthly_churn_rate returns one value per calendar month derived from PORTED_OUT/TERMINATED transitions in that month divided by active base at month start.",
+    "steps": [
+      "Seed PORTED_OUT/TERMINATED transitions across two calendar months",
+      "Call monthly_churn_rate",
+      "Assert one value per month matching the expected ratio"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F130",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "B",
+    "description": "All returned monetary aggregates (e.g., ARPU) are Decimal, never float.",
+    "steps": [
+      "Call arpu_trend",
+      "Assert every returned monetary value's type is Decimal"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F131",
+    "category": "functional",
+    "story": "E7-S2",
+    "group": "F",
+    "description": "Calling the reporting service for a period with zero activations returns a well-formed empty-but-valid funnel structure (no exception).",
+    "steps": [
+      "Call the funnel report for a period with no data",
+      "Assert a well-formed empty structure is returned, not an exception"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F132",
+    "category": "functional",
+    "story": "E7-S2",
+    "group": "F",
+    "description": "Plan-mix distribution percentages sum to 100 (within rounding tolerance of 0.1) across all active plans for a given snapshot.",
+    "steps": [
+      "Seed multiple active plans with subscribers",
+      "Call plan_mix report",
+      "Assert the percentages sum to 100 within 0.1 tolerance"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F133",
+    "category": "functional",
+    "story": "E7-S2",
+    "group": "F",
+    "description": "ARPU trend values are clearly labeled as stubbed/synthetic in the returned structure's metadata.",
+    "steps": [
+      "Call the ARPU report",
+      "Assert the response metadata includes a stubbed/synthetic label"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F134",
+    "category": "security",
+    "story": "E7-S2",
+    "group": "F",
+    "description": "A non-admin principal invoking the service directly (bypassing the API) still receives an authorization error, not just relying on the API layer.",
+    "steps": [
+      "Call the reporting service function directly with a non-admin principal",
+      "Assert an authorization error is raised at the service layer"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F135",
+    "category": "functional",
+    "story": "E7-S3",
+    "group": "G",
+    "description": "GET /api/admin/reports/activation-funnel (admin role) returns HTTP 200 with per-stage counts.",
+    "steps": [
+      "GET the endpoint as admin",
+      "Assert response status 200 with per-stage counts"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F136",
+    "category": "functional",
+    "story": "E7-S3",
+    "group": "G",
+    "description": "GET /api/admin/reports/churn returns HTTP 200 with monthly churn values.",
+    "steps": [
+      "GET the endpoint as admin",
+      "Assert response status 200 with monthly churn values"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F137",
+    "category": "functional",
+    "story": "E7-S3",
+    "group": "G",
+    "description": "GET /api/admin/reports/plan-mix returns HTTP 200 with per-plan percentage distribution.",
+    "steps": [
+      "GET the endpoint as admin",
+      "Assert response status 200 with per-plan percentages"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F138",
+    "category": "functional",
+    "story": "E7-S3",
+    "group": "G",
+    "description": "GET /api/admin/reports/arpu returns HTTP 200 with a stubbed ARPU trend series.",
+    "steps": [
+      "GET the endpoint as admin",
+      "Assert response status 200 with a labeled stubbed ARPU series"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F139",
+    "category": "security",
+    "story": "E7-S3",
+    "group": "G",
+    "description": "A non-admin principal calling any of the four endpoints receives HTTP 403.",
+    "steps": [
+      "Call each of the four endpoints as a non-admin principal",
+      "Assert response status 403 in every case"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F140",
+    "category": "ui",
+    "story": "E7-S4",
+    "group": "H",
+    "description": "Dashboard renders the activation funnel, churn, plan mix, and ARPU trend using data fetched from the four reporting endpoints.",
+    "steps": [
+      "Load the dashboard",
+      "Assert all four panels render with data from their respective endpoints"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F141",
+    "category": "ui",
+    "story": "E7-S4",
+    "group": "H",
+    "description": "Each panel displays a loading state while its endpoint call is in flight and an error state if the call fails.",
+    "steps": [
+      "Delay/fail one endpoint response",
+      "Assert the corresponding panel shows a loading then an error state"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F142",
+    "category": "ui",
+    "story": "E7-S4",
+    "group": "H",
+    "description": "The plan-mix panel labels each segment with its plan name and percentage.",
+    "steps": [
+      "Load the plan-mix panel with seeded data",
+      "Assert each segment shows a plan name and percentage label"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F143",
+    "category": "functional",
+    "story": "E6-S5",
+    "group": "F",
+    "description": "A CSR or admin can terminate a subscription in state ACTIVE, supplying a reason code, resulting in the subscription transitioning to TERMINATED via the shared FSM.",
+    "steps": [
+      "Set up a subscription in state ACTIVE",
+      "Call terminate_subscription() as CSR with a reason code",
+      "Assert the subscription becomes TERMINATED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F144",
+    "category": "functional",
+    "story": "E6-S5",
+    "group": "F",
+    "description": "A CSR or admin can terminate a subscription in state SUSPENDED, supplying a reason code, resulting in the subscription transitioning to TERMINATED via the shared FSM.",
+    "steps": [
+      "Set up a subscription in state SUSPENDED",
+      "Call terminate_subscription() as admin with a reason code",
+      "Assert the subscription becomes TERMINATED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F145",
+    "category": "functional",
+    "story": "E6-S5",
+    "group": "F",
+    "description": "Terminating a subscription in PENDING_KYC, PORT_OUT_REQUESTED, PORTED_OUT, or TERMINATED raises InvalidSubscriberStateException and writes no StateTransition row.",
+    "steps": [
+      "For each of PENDING_KYC, PORT_OUT_REQUESTED, PORTED_OUT, TERMINATED, set up a subscription in that state",
+      "Call terminate_subscription() as CSR with a reason code",
+      "Assert InvalidSubscriberStateException is raised and no StateTransition row was written"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F146",
+    "category": "functional",
+    "story": "E6-S5",
+    "group": "F",
+    "description": "Attempting termination without a reason code is rejected before any state change or StateTransition row is written.",
+    "steps": [
+      "Set up a subscription in state ACTIVE",
+      "Call terminate_subscription() with no reason code",
+      "Assert rejection and that no state change or StateTransition row was written"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F147",
+    "category": "security",
+    "story": "E6-S5",
+    "group": "F",
+    "description": "A non-CSR/non-admin principal (subscriber or dealer-context) attempting termination is rejected.",
+    "steps": [
+      "Call terminate_subscription() as a subscriber principal",
+      "Assert an authorization error is raised and no state change occurs"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F148",
+    "category": "functional",
+    "story": "E6-S5",
+    "group": "F",
+    "description": "A successful termination writes a StateTransition row with a non-null actor, a non-null reason_code, and a timestamp, and logs a structured entry with the masked actor.",
+    "steps": [
+      "Perform a successful termination",
+      "Assert the resulting StateTransition row has non-null actor, reason_code, created_at",
+      "Capture the emitted log line and assert it is structured JSON with a masked actor"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F149",
+    "category": "functional",
+    "story": "E6-S6",
+    "group": "G",
+    "description": "POST /api/subscriptions/{id}/terminate on an ACTIVE subscription, called by CSR, returns HTTP 200 with state TERMINATED.",
+    "steps": [
+      "Set up a subscription in state ACTIVE",
+      "POST /api/subscriptions/{id}/terminate as CSR with a reason code",
+      "Assert response status 200 with state TERMINATED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F150",
+    "category": "functional",
+    "story": "E6-S6",
+    "group": "G",
+    "description": "POST /api/subscriptions/{id}/terminate on a SUSPENDED subscription, called by admin, returns HTTP 200 with state TERMINATED.",
+    "steps": [
+      "Set up a subscription in state SUSPENDED",
+      "POST /api/subscriptions/{id}/terminate as admin with a reason code",
+      "Assert response status 200 with state TERMINATED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F151",
+    "category": "functional",
+    "story": "E6-S6",
+    "group": "G",
+    "description": "POST /api/subscriptions/{id}/terminate on a subscription not in ACTIVE/SUSPENDED returns HTTP 409 with reason_code INVALID_STATE_TRANSITION.",
+    "steps": [
+      "Set up a subscription in state PORT_OUT_REQUESTED",
+      "POST /api/subscriptions/{id}/terminate as CSR with a reason code",
+      "Assert response status 409 with reason_code INVALID_STATE_TRANSITION"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F152",
+    "category": "functional",
+    "story": "E6-S6",
+    "group": "G",
+    "description": "POST /api/subscriptions/{id}/terminate with a missing reason_code returns HTTP 422 with reason_code VALIDATION_ERROR.",
+    "steps": [
+      "Set up a subscription in state ACTIVE",
+      "POST /api/subscriptions/{id}/terminate as CSR with no reason_code",
+      "Assert response status 422 with reason_code VALIDATION_ERROR"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F153",
+    "category": "security",
+    "story": "E6-S6",
+    "group": "G",
+    "description": "A subscriber-role principal calling POST /api/subscriptions/{id}/terminate receives HTTP 403.",
+    "steps": [
+      "POST /api/subscriptions/{id}/terminate as a subscriber principal",
+      "Assert response status 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  }
+]

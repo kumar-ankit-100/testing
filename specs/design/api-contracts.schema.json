@@ -1,0 +1,753 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TelcoLane API",
+    "version": "1.0.0",
+    "description": "Telecom Subscriber & Plan Lifecycle Management Platform API"
+  },
+  "servers": [
+    { "url": "http://localhost:8000", "description": "Local dev" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Decimal": { "type": "string", "pattern": "^-?[0-9]+\\.[0-9]{2}$" },
+      "SubscriberState": {
+        "type": "string",
+        "enum": ["PENDING_KYC", "ACTIVE", "SUSPENDED", "TERMINATED", "PORT_OUT_REQUESTED", "PORTED_OUT"]
+      },
+      "PlanType": { "type": "string", "enum": ["PREPAID", "POSTPAID"] },
+      "Role": { "type": "string", "enum": ["subscriber", "csr", "admin", "dealer"] },
+      "ReasonCode": {
+        "type": "string",
+        "enum": [
+          "UNAUTHENTICATED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR",
+          "DUPLICATE_ACTIVE_MOBILE", "KYC_UNVERIFIED", "DEALER_INVALID", "MNP_FAILED",
+          "INVALID_STATE_TRANSITION", "ALREADY_ACTIVE", "MIN_TENURE_NOT_MET",
+          "SUBSCRIPTION_SUSPENDED", "COOLING_PERIOD_NOT_ELAPSED", "PLAN_VERSION_IMMUTABLE",
+          "MISSING_OVERRIDE_REASON", "RATE_LIMITED"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["reason_code", "message"],
+            "properties": {
+              "reason_code": { "$ref": "#/components/schemas/ReasonCode" },
+              "message": { "type": "string" },
+              "details": { "type": "object" }
+            }
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "mobile_number": { "type": "string", "pattern": "^[0-9]{10}$" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": ["access_token", "role", "expires_in"],
+        "properties": {
+          "access_token": { "type": "string" },
+          "role": { "$ref": "#/components/schemas/Role" },
+          "subscriber_id": { "type": ["string", "null"] },
+          "expires_in": { "type": "integer" }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["mobile_number", "identity_proof_ref", "plan_type"],
+        "properties": {
+          "mobile_number": { "type": "string", "pattern": "^[0-9]{10}$" },
+          "identity_proof_ref": { "type": "string" },
+          "plan_type": { "$ref": "#/components/schemas/PlanType" }
+        }
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "required": ["subscriber_id", "subscription_id", "state", "access_token"],
+        "properties": {
+          "subscriber_id": { "type": "string" },
+          "subscription_id": { "type": "string" },
+          "state": { "$ref": "#/components/schemas/SubscriberState" },
+          "access_token": { "type": "string" }
+        }
+      },
+      "ActivateRequest": {
+        "type": "object",
+        "required": ["dealer_code"],
+        "properties": {
+          "dealer_code": { "type": "string" }
+        }
+      },
+      "ActivateResponse": {
+        "type": "object",
+        "required": ["subscriber_id", "state"],
+        "properties": {
+          "subscriber_id": { "type": "string" },
+          "state": { "$ref": "#/components/schemas/SubscriberState" },
+          "activated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SubscriberDetail": {
+        "type": "object",
+        "required": ["subscriber_id", "mobile_number", "subscription"],
+        "properties": {
+          "subscriber_id": { "type": "string" },
+          "mobile_number": { "type": "string" },
+          "subscription": {
+            "type": "object",
+            "properties": {
+              "subscription_id": { "type": "string" },
+              "state": { "$ref": "#/components/schemas/SubscriberState" },
+              "plan_type": { "$ref": "#/components/schemas/PlanType" },
+              "current_plan_version_id": { "type": "string" },
+              "activated_at": { "type": ["string", "null"], "format": "date-time" }
+            }
+          }
+        }
+      },
+      "PlanSummary": {
+        "type": "object",
+        "properties": {
+          "plan_id": { "type": "string" },
+          "plan_version_id": { "type": "string" },
+          "plan_name": { "type": "string" },
+          "plan_type": { "$ref": "#/components/schemas/PlanType" },
+          "version_number": { "type": "integer" },
+          "price": { "$ref": "#/components/schemas/Decimal" },
+          "published": { "type": "boolean" }
+        }
+      },
+      "PlanListResponse": {
+        "type": "object",
+        "properties": {
+          "plans": { "type": "array", "items": { "$ref": "#/components/schemas/PlanSummary" } }
+        }
+      },
+      "CreatePlanRequest": {
+        "type": "object",
+        "required": ["plan_id", "plan_name", "plan_type", "price"],
+        "properties": {
+          "plan_id": { "type": "string" },
+          "plan_name": { "type": "string" },
+          "plan_type": { "$ref": "#/components/schemas/PlanType" },
+          "price": { "$ref": "#/components/schemas/Decimal" },
+          "terms": { "type": "object" }
+        }
+      },
+      "PlanVersionResponse": {
+        "type": "object",
+        "properties": {
+          "plan_version_id": { "type": "string" },
+          "plan_id": { "type": "string" },
+          "version_number": { "type": "integer" },
+          "published": { "type": "boolean" },
+          "price": { "$ref": "#/components/schemas/Decimal" },
+          "published_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "UpdatePlanRequest": {
+        "type": "object",
+        "properties": {
+          "price": { "$ref": "#/components/schemas/Decimal" },
+          "plan_name": { "type": "string" },
+          "terms": { "type": "object" }
+        }
+      },
+      "PlanChangePreviewRequest": {
+        "type": "object",
+        "required": ["target_plan_version_id"],
+        "properties": {
+          "target_plan_version_id": { "type": "string" }
+        }
+      },
+      "PlanChangePreviewResponse": {
+        "type": "object",
+        "properties": {
+          "pro_rata_amount": { "$ref": "#/components/schemas/Decimal" },
+          "charges_total": { "$ref": "#/components/schemas/Decimal" },
+          "target_plan_version_id": { "type": "string" },
+          "billing_period_end": { "type": "string", "format": "date" }
+        }
+      },
+      "PlanChangeCommitResponse": {
+        "type": "object",
+        "properties": {
+          "billing_record_id": { "type": "string" },
+          "new_plan_version_id": { "type": "string" },
+          "pro_rata_amount": { "$ref": "#/components/schemas/Decimal" }
+        }
+      },
+      "BillingRecord": {
+        "type": "object",
+        "properties": {
+          "billing_record_id": { "type": "string" },
+          "pro_rata_amount": { "$ref": "#/components/schemas/Decimal" },
+          "charges_total": { "$ref": "#/components/schemas/Decimal" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BillingRecordListResponse": {
+        "type": "object",
+        "properties": {
+          "billing_records": { "type": "array", "items": { "$ref": "#/components/schemas/BillingRecord" } }
+        }
+      },
+      "SubscriptionStateResponse": {
+        "type": "object",
+        "properties": {
+          "subscription_id": { "type": "string" },
+          "state": { "$ref": "#/components/schemas/SubscriberState" }
+        }
+      },
+      "PortOutResponse": {
+        "type": "object",
+        "properties": {
+          "subscription_id": { "type": "string" },
+          "state": { "$ref": "#/components/schemas/SubscriberState" },
+          "cooling_period_end_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TerminateRequest": {
+        "type": "object",
+        "required": ["reason_code"],
+        "properties": {
+          "reason_code": { "type": "string" }
+        }
+      },
+      "StateTransition": {
+        "type": "object",
+        "properties": {
+          "from_state": { "$ref": "#/components/schemas/SubscriberState" },
+          "to_state": { "$ref": "#/components/schemas/SubscriberState" },
+          "reason_code": { "type": ["string", "null"] },
+          "actor": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "StateTransitionListResponse": {
+        "type": "object",
+        "properties": {
+          "transitions": { "type": "array", "items": { "$ref": "#/components/schemas/StateTransition" } }
+        }
+      },
+      "ExceptionQueueItem": {
+        "type": "object",
+        "properties": {
+          "subscriber_id": { "type": "string" },
+          "subscription_id": { "type": "string" },
+          "rejected_action": { "type": "string", "enum": ["ACTIVATION", "PLAN_CHANGE"] },
+          "reason_code": { "$ref": "#/components/schemas/ReasonCode" },
+          "rejected_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ExceptionQueueResponse": {
+        "type": "object",
+        "properties": {
+          "exceptions": { "type": "array", "items": { "$ref": "#/components/schemas/ExceptionQueueItem" } }
+        }
+      },
+      "OverrideRequest": {
+        "type": "object",
+        "required": ["reason_code", "action"],
+        "properties": {
+          "reason_code": { "type": "string" },
+          "action": { "type": "string", "enum": ["ACTIVATION", "PLAN_CHANGE"] }
+        }
+      },
+      "OverrideResponse": {
+        "type": "object",
+        "properties": {
+          "subscription_id": { "type": "string" },
+          "state": { "$ref": "#/components/schemas/SubscriberState" },
+          "override_id": { "type": "string" }
+        }
+      },
+      "CSROverrideRecord": {
+        "type": "object",
+        "properties": {
+          "override_id": { "type": "string" },
+          "actor": { "type": "string" },
+          "reason_code": { "type": "string" },
+          "overridden_action": { "type": "string", "enum": ["ACTIVATION", "PLAN_CHANGE"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CSROverrideListResponse": {
+        "type": "object",
+        "properties": {
+          "overrides": { "type": "array", "items": { "$ref": "#/components/schemas/CSROverrideRecord" } }
+        }
+      },
+      "ActivationFunnelResponse": {
+        "type": "object",
+        "properties": {
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stage": { "type": "string", "enum": ["REGISTERED", "KYC_PASSED", "DEALER_PASSED", "MNP_PASSED", "ACTIVATED"] },
+                "count": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "ChurnResponse": {
+        "type": "object",
+        "properties": {
+          "monthly": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": { "type": "string" },
+                "churn_rate": { "$ref": "#/components/schemas/Decimal" }
+              }
+            }
+          }
+        }
+      },
+      "PlanMixResponse": {
+        "type": "object",
+        "properties": {
+          "plans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "plan_id": { "type": "string" },
+                "plan_name": { "type": "string" },
+                "percentage": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "ArpuResponse": {
+        "type": "object",
+        "properties": {
+          "stubbed": { "type": "boolean" },
+          "monthly": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": { "type": "string" },
+                "arpu": { "$ref": "#/components/schemas/Decimal" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid bearer token",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Forbidden": {
+        "description": "Authenticated but not permitted",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Conflict": {
+        "description": "State conflict",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "UnprocessableEntity": {
+        "description": "Business rule rejection",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login (staff credentials or subscriber self-service mobile number)",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Authenticated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/subscribers/register": {
+      "post": {
+        "summary": "Self-register a new subscriber/subscription in PENDING_KYC",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterResponse" } } } },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/subscribers/{subscriber_id}/activate": {
+      "post": {
+        "summary": "Run the rule-based activation engine (KYC/dealer/MNP)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscriber_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ActivateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Activated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ActivateResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/subscribers/{subscriber_id}": {
+      "get": {
+        "summary": "Get subscriber and subscription detail",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscriber_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriberDetail" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/plans": {
+      "get": {
+        "summary": "List published plans",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanListResponse" } } } }
+        }
+      }
+    },
+    "/api/admin/plans": {
+      "get": {
+        "summary": "List full plan version history",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanListResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "summary": "Create a draft plan version",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePlanRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanVersionResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/admin/plans/{plan_version_id}": {
+      "put": {
+        "summary": "Edit a draft plan version",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "plan_version_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePlanRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanVersionResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/admin/plans/{plan_version_id}/publish": {
+      "post": {
+        "summary": "Publish a draft plan version",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "plan_version_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Published", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanVersionResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/plan-change/preview": {
+      "post": {
+        "summary": "Preview a pro-rata plan change (no mutation)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanChangePreviewRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanChangePreviewResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/plan-change/commit": {
+      "post": {
+        "summary": "Commit a pro-rata plan change",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanChangePreviewRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanChangeCommitResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/billing-records": {
+      "get": {
+        "summary": "List billing records for a subscription (append-only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BillingRecordListResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/suspend": {
+      "post": {
+        "summary": "Suspend an ACTIVE subscription",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionStateResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/resume": {
+      "post": {
+        "summary": "Resume a SUSPENDED subscription",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionStateResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/port-out": {
+      "post": {
+        "summary": "Request port-out, starting the 7-day cooling period",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortOutResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/port-out/cancel": {
+      "post": {
+        "summary": "Cancel a port-out request within the cooling-period window",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionStateResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/port-out/finalize": {
+      "post": {
+        "summary": "Finalize a port-out request after the cooling-period window elapses",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionStateResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/terminate": {
+      "post": {
+        "summary": "CSR/admin-only account closure, independent of the port-out flow",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TerminateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubscriptionStateResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/state-transitions": {
+      "get": {
+        "summary": "List append-only state transition history for a subscription",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StateTransitionListResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/csr/exceptions": {
+      "get": {
+        "summary": "List pending activation/plan-change exceptions",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExceptionQueueResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/csr/exceptions/{subscription_id}/override": {
+      "post": {
+        "summary": "Override a rejected activation or plan-change",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OverrideRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OverrideResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription_id}/csr-overrides": {
+      "get": {
+        "summary": "List append-only CSR override audit trail for a subscription",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "subscription_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CSROverrideListResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/admin/reports/activation-funnel": {
+      "get": {
+        "summary": "Activation funnel report",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ActivationFunnelResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/admin/reports/churn": {
+      "get": {
+        "summary": "Monthly churn report",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChurnResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/admin/reports/plan-mix": {
+      "get": {
+        "summary": "Plan mix distribution report",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanMixResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/admin/reports/arpu": {
+      "get": {
+        "summary": "Stubbed ARPU trend report",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArpuResponse" } } } },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    }
+  }
+}

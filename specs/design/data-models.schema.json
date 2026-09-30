@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://telcolane.internal/schemas/data-models.schema.json",
+  "title": "TelcoLane Data Models",
+  "definitions": {
+    "Decimal": {
+      "type": "string",
+      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+      "description": "Canonical Decimal serialization, e.g. '199.00'. Never a JSON number to avoid float precision loss."
+    },
+    "UUIDString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "SubscriberState": {
+      "type": "string",
+      "enum": ["PENDING_KYC", "ACTIVE", "SUSPENDED", "TERMINATED", "PORT_OUT_REQUESTED", "PORTED_OUT"]
+    },
+    "PlanType": {
+      "type": "string",
+      "enum": ["PREPAID", "POSTPAID"]
+    },
+    "Role": {
+      "type": "string",
+      "enum": ["subscriber", "csr", "admin", "dealer"]
+    },
+    "PortOutStatus": {
+      "type": "string",
+      "enum": ["PENDING", "CANCELLED_WITHIN_WINDOW", "FINALIZED"]
+    },
+    "OverriddenAction": {
+      "type": "string",
+      "enum": ["ACTIVATION", "PLAN_CHANGE"]
+    },
+    "Subscriber": {
+      "type": "object",
+      "required": ["subscriber_id", "mobile_number", "identity_proof_ref", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "subscriber_id": { "$ref": "#/definitions/UUIDString" },
+        "mobile_number": { "type": "string", "pattern": "^[0-9]{10}$" },
+        "identity_proof_ref": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Subscription": {
+      "type": "object",
+      "required": ["subscription_id", "subscriber_id", "mobile_number", "plan_type", "state", "created_at", "updated_at"],
+      "additionalProperties": false,
+      "properties": {
+        "subscription_id": { "$ref": "#/definitions/UUIDString" },
+        "subscriber_id": { "$ref": "#/definitions/UUIDString" },
+        "mobile_number": { "type": "string", "pattern": "^[0-9]{10}$" },
+        "plan_type": { "$ref": "#/definitions/PlanType" },
+        "state": { "$ref": "#/definitions/SubscriberState" },
+        "current_plan_version_id": { "type": ["string", "null"] },
+        "dealer_code": { "type": ["string", "null"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "activated_at": { "type": ["string", "null"], "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PlanVersion": {
+      "type": "object",
+      "required": ["plan_version_id", "plan_id", "plan_name", "plan_type", "version_number", "price", "terms", "published", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "plan_version_id": { "$ref": "#/definitions/UUIDString" },
+        "plan_id": { "type": "string", "minLength": 1 },
+        "plan_name": { "type": "string", "minLength": 1 },
+        "plan_type": { "$ref": "#/definitions/PlanType" },
+        "version_number": { "type": "integer", "minimum": 1 },
+        "price": { "$ref": "#/definitions/Decimal" },
+        "terms": { "type": "object" },
+        "published": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "published_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "BillingRecord": {
+      "type": "object",
+      "required": ["billing_record_id", "subscription_id", "to_plan_version_id", "pro_rata_amount", "charges_total", "billing_period_start", "billing_period_end", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "billing_record_id": { "$ref": "#/definitions/UUIDString" },
+        "subscription_id": { "$ref": "#/definitions/UUIDString" },
+        "from_plan_version_id": { "type": ["string", "null"] },
+        "to_plan_version_id": { "$ref": "#/definitions/UUIDString" },
+        "pro_rata_amount": { "$ref": "#/definitions/Decimal" },
+        "charges_total": { "$ref": "#/definitions/Decimal" },
+        "billing_period_start": { "type": "string", "format": "date" },
+        "billing_period_end": { "type": "string", "format": "date" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "StateTransition": {
+      "type": "object",
+      "required": ["transition_id", "subscription_id", "from_state", "to_state", "actor", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "transition_id": { "$ref": "#/definitions/UUIDString" },
+        "subscription_id": { "$ref": "#/definitions/UUIDString" },
+        "from_state": { "$ref": "#/definitions/SubscriberState" },
+        "to_state": { "$ref": "#/definitions/SubscriberState" },
+        "reason_code": { "type": ["string", "null"] },
+        "actor": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PortOutEvent": {
+      "type": "object",
+      "required": ["port_out_event_id", "subscription_id", "requested_at", "cooling_period_end_at", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "port_out_event_id": { "$ref": "#/definitions/UUIDString" },
+        "subscription_id": { "$ref": "#/definitions/UUIDString" },
+        "requested_at": { "type": "string", "format": "date-time" },
+        "cooling_period_end_at": { "type": "string", "format": "date-time" },
+        "status": { "$ref": "#/definitions/PortOutStatus" },
+        "closed_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "CSROverride": {
+      "type": "object",
+      "required": ["override_id", "subscription_id", "actor", "reason_code", "overridden_action", "original_rejection_reason", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "override_id": { "$ref": "#/definitions/UUIDString" },
+        "subscription_id": { "$ref": "#/definitions/UUIDString" },
+        "actor": { "type": "string", "minLength": 1 },
+        "reason_code": { "type": "string", "minLength": 1 },
+        "overridden_action": { "$ref": "#/definitions/OverriddenAction" },
+        "original_rejection_reason": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "DealerMaster": {
+      "type": "object",
+      "required": ["dealer_code", "dealer_name", "active"],
+      "additionalProperties": false,
+      "properties": {
+        "dealer_code": { "type": "string", "minLength": 1 },
+        "dealer_name": { "type": "string", "minLength": 1 },
+        "active": { "type": "boolean" }
+      }
+    },
+    "User": {
+      "type": "object",
+      "required": ["user_id", "role", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "user_id": { "$ref": "#/definitions/UUIDString" },
+        "role": { "$ref": "#/definitions/Role" },
+        "username": { "type": ["string", "null"] },
+        "password_hash": { "type": ["string", "null"] },
+        "mobile_number": { "type": ["string", "null"], "pattern": "^[0-9]{10}$" },
+        "subscriber_id": { "type": ["string", "null"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "Subscriber": { "$ref": "#/definitions/Subscriber" },
+    "Subscription": { "$ref": "#/definitions/Subscription" },
+    "PlanVersion": { "$ref": "#/definitions/PlanVersion" },
+    "BillingRecord": { "$ref": "#/definitions/BillingRecord" },
+    "StateTransition": { "$ref": "#/definitions/StateTransition" },
+    "PortOutEvent": { "$ref": "#/definitions/PortOutEvent" },
+    "CSROverride": { "$ref": "#/definitions/CSROverride" },
+    "DealerMaster": { "$ref": "#/definitions/DealerMaster" },
+    "User": { "$ref": "#/definitions/User" }
+  }
+}
