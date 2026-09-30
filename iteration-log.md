@@ -60,4 +60,63 @@ story's work, no rework across stories):
 Result: 129 tests, 100% line coverage across the entire backend (546 statements),
 ruff clean, mypy --strict clean, zero upward-layer imports (grep-verified for all
 five layer boundaries). All commits on feat/group-b-foundations, merged --no-ff
-into develop. Awaiting evaluator review (not self-assessed by the generator).
+into develop. Passed evaluator review (40/40 checks after a contract-count fix,
+5/5 architecture_checks, 129/129 tests).
+
+Note: develop's history was reconstructed after this group (a direct commit that
+had landed outside the branch workflow was rewritten into a proper --no-ff merge).
+Content unchanged; current develop tip verified as 2b3e9ba before starting Group C.
+
+## Group C
+
+3 stories: E2-S2 (subscriber self-registration service), E3-S2 (plan catalog
+service — versioning/immutability), E4-S2 (pro-rata billing calculation service).
+
+Micro-DAG / execution decision: component-map.md shows zero shared files across
+these three (each owns exactly one service file + one test file), unlike Group
+B's schema.sql coupling. Genuinely parallelizable in principle. Chose sequential
+implementation anyway: Learned Rule 1 still applies (no SendMessage), and even
+with per-teammate git-worktree isolation to avoid concurrent-git-operation risk,
+merging 3 independently-written services back afterward risks convention drift
+(exception patterns, masking approach, admin-role-check style) that's cheaper to
+avoid by writing all three with the same context in hand than to review-and-fix
+post-hoc across 3 diffs. Order: E4-S2 (fully self-contained, no repository/auth
+dependency, formula fully own-designed since no story pins down exact numeric
+thresholds) -> E2-S2 (needs subscriber_repository + logging_service) -> E3-S2
+(needs plan_repository + a new PlanVersionImmutableError + admin-role check,
+most involved of the three). One commit per story on feat/group-c-services.
+
+Notable in-flight findings:
+  - E4-S2: BRD explicitly defers the exact pro-rata formula/thresholds to
+    implementation ("precise wording/thresholds... will be finalized during
+    /test, not this BRD"). Designed and documented the module's own formula:
+    incremental per-day price differential x days strictly AFTER change_date
+    through billing_cycle_end (change_date excluded — changeover takes full
+    effect the next day), days-in-cycle from calendar.monthrange(change_date's
+    month) so leap-year Feb is exact, clamped >= 0.00. Hand-verified all 6
+    table-driven Decimal expected values before running; all passed first try.
+  - E2-S2: added get_active_subscription_by_mobile to subscriber_repository.py
+    (E2-S1, already-merged) — the exact function deliberately deferred as
+    speculative in Group B, now with a real caller. Extended
+    logging_service.PII_FIELD_NAMES with identity_proof_ref.
+  - E2-S2 surfaced a real structural bug in logging_service.py (E1-S3, already-
+    merged): get_logger()'s handler bound sys.stdout once at construction time,
+    but get_logger() is idempotent per logger name — so only the FIRST test in
+    the whole suite to ever trigger a given logger name would see captured
+    output via capsys; every later test reusing that logger name silently wrote
+    into an earlier, torn-down capture buffer. Would have silently broken every
+    future service's log-content tests, not just this one. Fixed with
+    _CurrentStdoutHandler (re-reads sys.stdout on every emit(), not once at
+    construction) — full detail in the E2-S2 commit message.
+  - E3-S2: extended plan_repository.py (E3-S1, already-merged) with
+    update_draft_plan_version — a real update path for unpublished rows (the
+    E3-S1 trigger only ever blocked updates when OLD.published=1, so this was
+    always legal at the DB level; the repository just never exposed a function
+    for it until this story's AC-3 needed a real "attempt to edit" entry point
+    to raise a friendly PlanVersionImmutableError against, distinct from the
+    raw sqlite3.IntegrityError the trigger throws on a bypass attempt).
+
+Result: 165 tests, 100% line coverage across the entire backend (664
+statements), ruff/mypy clean, zero upward-layer imports. All commits on
+feat/group-c-services. Awaiting evaluator review (not self-assessed by the
+generator).
