@@ -12,10 +12,34 @@ import logging
 import sys
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from typing import TextIO
 
 from app.lib.pii_mask import mask_last_n
 
-PII_FIELD_NAMES: frozenset[str] = frozenset({"mobile_number", "aadhaar_ref", "pan_ref"})
+PII_FIELD_NAMES: frozenset[str] = frozenset(
+    {"mobile_number", "aadhaar_ref", "pan_ref", "identity_proof_ref"}
+)
+
+
+class _CurrentStdoutHandler(logging.StreamHandler[TextIO]):
+    """A StreamHandler that re-resolves sys.stdout on every emit.
+
+    logging.getLogger(name) caches Logger objects globally by name, and
+    get_logger() only attaches a handler once per name (idempotent, by
+    design). A plain StreamHandler(stream=sys.stdout) binds a fixed
+    reference to whatever sys.stdout was at construction time — which
+    breaks pytest's capsys fixture, since capsys replaces sys.stdout with
+    a fresh object per test. Without this override, only the first test
+    to ever trigger a given logger name would observe captured output;
+    every later test reusing that logger name would silently write into
+    an earlier, already-torn-down capture buffer. Re-reading sys.stdout on
+    every emit call keeps each log line going to whichever stdout is
+    actually live right now.
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.stream = sys.stdout
+        super().emit(record)
 
 
 class JsonFormatter(logging.Formatter):
@@ -52,7 +76,7 @@ def get_logger(name: str) -> logging.Logger:
     """
     logger = logging.getLogger(name)
     if not logger.handlers:
-        handler = logging.StreamHandler(stream=sys.stdout)
+        handler = _CurrentStdoutHandler(stream=sys.stdout)
         handler.setFormatter(JsonFormatter())
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
