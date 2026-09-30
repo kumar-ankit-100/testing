@@ -460,3 +460,68 @@ evaluator_result (Group D):
 next_action: Group E (E2-S4 registration/activation API, E3-S4 admin plan catalog UI, E4-S3
   plan change service, E5-S2 suspend/resume service, E5-S3 port-out service) per
   specs/stories/dependency-graph.md. First group with frontend work (E3-S4).
+
+=== Session 5 ===
+date: 2026-09-30
+mode: /implement (generator)
+groups_completed: [A, B, C, D] (D confirmed evaluator PASS, 14/14 checks, all
+  architecture_checks, 196/196 tests; pushed to origin as 801ac1c)
+groups_remaining: [E (implemented by generator, NOT yet evaluator-approved), F, G, H]
+current_group: E
+current_stories: [E2-S4, E3-S4, E4-S3, E5-S2, E5-S3] — all 5 code + tests written and
+  committed; awaiting evaluator
+sprint_contract: none written yet for Group E
+last_commit: see git log on feat/group-e-lifecycle-services-and-apis (5 story commits, merge
+  to develop happens immediately after this entry, see git section)
+backend_test_suite: 237/237 passing, 100% line coverage across all 1036 statements, ruff
+  clean, mypy --strict clean, zero upward-layer imports
+frontend_test_suite: 12/12 vitest tests passing, eslint clean, tsc --noEmit clean, production
+  build succeeds, dev server smoke-tested on :5173 (curled, killed cleanly)
+coverage: 100% backend; frontend has no coverage tooling configured yet (not requested by any
+  story so far)
+learned_rules: 1 (unchanged)
+blocked_stories: none
+
+Verified before starting: confirmed develop tip = 801ac1c as the coordinator specified,
+re-ran the full backend suite on that tip (196/196, ruff/mypy clean) before branching
+feat/group-e-lifecycle-services-and-apis from it.
+
+what_was_built (Group E) — full detail in iteration-log.md's "## Group E" section:
+  - E5-S2 (suspend_resume_service): suspend/resume with an explicit expected_from_state check
+    ahead of the generic FSM call — a parametrized test caught that the FSM table alone can't
+    tell "resume" apart from activation/cancel, since all three land on ACTIVE.
+  - E5-S3 (port_out_service): request/cancel/finalize against the existing E5-S1 repository;
+    CoolingPeriodNotElapsedError for AC-4's too-early-finalize case.
+  - E4-S3 (plan_change_service): preview/commit sharing one pro-rata computation path (mirrors
+    E4-S2's own symmetry guarantee); added min_tenure_days=90 to Settings.
+  - E2-S4 (subscriber_router): register/activate endpoints, thin handlers, all outcomes mapped
+    by newly-extended error_handlers.py from the exceptions the services already raise.
+  - E3-S4 (frontend, new territory): scaffolded frontend/ from scratch per folder-structure.md
+    (Vite+React+TS+vitest+eslint+Testing Library+Playwright), built the admin plan catalog page
+    against specs/design/mockups/E3-S4.html's field naming, verified with vitest + lint +
+    typecheck + a production build + a dev-server smoke test (not just unit tests in isolation).
+
+process_note — documented design gap found independently by both E2-S4 and E3-S4:
+  api-contracts.md describes the subscriber register/activate routes and the admin plan
+  routes as requiring a bearer token minted by POST /api/auth/login, but no story anywhere in
+  specs/stories/dependency-graph.md builds that login endpoint. Both sides implemented without
+  an auth gate for now rather than inventing untestable behavior beyond what any AC requires;
+  documented in code comments on both stacks. A future auth-API story would need to close this
+  on both the backend router and the frontend's token handling together.
+
+e2e/admin-plan-catalog.spec.ts was written (Playwright, following the project's role/label
+selector conventions) but NOT executed — needs live dev servers on both stacks plus the auth
+gap above. @playwright/test is installed and wired into playwright.config.ts + npm run e2e for
+whenever that becomes runnable (likely a dedicated /test phase once auth exists).
+
+npm audit flags 5 dev-dependency-only vulnerabilities (vitest/esbuild dev-server advisories,
+fixes require breaking vite/vitest major-version upgrades). Left as-is deliberately — no
+production/runtime exposure for a local-dev-only project; flagged for a future maintenance
+pass rather than risking a mid-group config break.
+
+next_action: coordinator to independently re-verify (full backend suite + ruff + mypy, full
+  frontend suite + lint + typecheck + build) before merging
+  feat/group-e-lifecycle-services-and-apis into develop; then write sprint-contracts/group-e.json
+  and hand off to evaluator. After Group E evaluation, Group F (E2-S5 subscriber UI, E4-S4 plan
+  change API, E5-S4 suspend/resume+port-out API, E6-S2 CSR override service, E6-S5 termination
+  service, E7-S2 reporting service) is next per specs/stories/dependency-graph.md.
