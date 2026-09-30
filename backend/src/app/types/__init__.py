@@ -19,10 +19,14 @@ from app.types.exceptions import (
     ActivationRejectedError,
     AuthenticationError,
     AuthorizationError,
+    CoolingPeriodNotElapsedError,
     DuplicateActiveSubscriptionError,
     InvalidMobileNumberError,
     InvalidSubscriberStateException,
+    MinTenureNotMetError,
     PlanVersionImmutableError,
+    SubscriptionNotActiveError,
+    SubscriptionSuspendedError,
 )
 from app.types.fsm import TRANSITION_TABLE, transition
 from app.types.plan import PlanVersion
@@ -38,10 +42,12 @@ __all__ = [
     "AuthorizationError",
     "BillingRecord",
     "CSROverride",
+    "CoolingPeriodNotElapsedError",
     "DealerMaster",
     "DuplicateActiveSubscriptionError",
     "InvalidMobileNumberError",
     "InvalidSubscriberStateException",
+    "MinTenureNotMetError",
     "OverriddenAction",
     "PlanType",
     "PlanVersion",
@@ -55,6 +61,8 @@ __all__ = [
     "Subscriber",
     "SubscriberState",
     "Subscription",
+    "SubscriptionNotActiveError",
+    "SubscriptionSuspendedError",
     "User",
     "transition",
 ]
