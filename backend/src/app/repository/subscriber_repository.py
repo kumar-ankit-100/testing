@@ -101,6 +101,46 @@ def get_active_subscription_by_mobile(
     return _row_to_subscription(row)
 
 
+def get_subscription_by_subscriber_id(
+    connection: sqlite3.Connection, subscriber_id: str
+) -> Subscription | None:
+    """Return the subscription belonging to subscriber_id, or None.
+
+    Used by activation_service (E2-S3) to look up the subscription named
+    by the {subscriber_id} path parameter before evaluating any rule.
+    """
+    row = connection.execute(
+        f"SELECT {_SUBSCRIPTION_COLUMNS} FROM subscriptions WHERE subscriber_id = ?",
+        (subscriber_id,),
+    ).fetchone()
+    return _row_to_subscription(row)
+
+
+def activate_subscription(
+    connection: sqlite3.Connection, subscription_id: str, activated_at: datetime
+) -> None:
+    """Flip a subscription to ACTIVE, stamping activated_at and updated_at.
+
+    Raises sqlite3.IntegrityError if this would create a second ACTIVE
+    subscription for the same mobile number — the partial unique index
+    idx_subscriptions_active_mobile guards UPDATE, not just INSERT, which
+    is the mechanism behind E2-S3 AC-6's double-activation race guard.
+    The FSM-validity check (is this subscription currently PENDING_KYC)
+    is the service layer's job, evaluated before calling this function.
+    """
+    connection.execute(
+        "UPDATE subscriptions SET state = ?, activated_at = ?, updated_at = ? "
+        "WHERE subscription_id = ?",
+        (
+            SubscriberState.ACTIVE.value,
+            activated_at.isoformat(),
+            activated_at.isoformat(),
+            subscription_id,
+        ),
+    )
+    connection.commit()
+
+
 def _row_to_subscriber(row: tuple[object, ...] | None) -> Subscriber | None:
     if row is None:
         return None

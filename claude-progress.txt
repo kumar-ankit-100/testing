@@ -374,3 +374,63 @@ next_action: coordinator to independently re-verify (full backend suite + ruff +
   merging feat/group-c-services into develop; then write sprint-contracts/group-c.json and hand
   off to evaluator. After Group C evaluation, Group D (E2-S3 activation engine, E3-S3 plan
   catalog admin API) is next per specs/stories/dependency-graph.md.
+
+=== Session 4 ===
+date: 2026-09-30
+mode: /implement (generator)
+groups_completed: [A, B, C] (Group C confirmed evaluator PASS, 16/16 checks, all
+  architecture_checks, 165/165 tests; pushed to origin as 310c1f8)
+groups_remaining: [D (implemented by generator, NOT yet evaluator-approved), E, F, G, H]
+current_group: D
+current_stories: [E2-S3, E3-S3] — both code + tests written and committed; awaiting evaluator
+sprint_contract: none written yet for Group D
+last_commit: see git log on feat/group-d-activation-and-plan-api (2 story commits, merge to
+  develop happens immediately after this entry, see git section)
+backend_test_suite: 196/196 passing, 100% line coverage across the entire backend (823
+  statements), ruff clean, mypy --strict clean, zero upward-layer imports (grep-verified)
+coverage: 100%
+learned_rules: 1 (unchanged)
+blocked_stories: none
+
+Verified before starting: confirmed develop tip = 310c1f8 as the coordinator specified,
+re-ran the full backend suite on that tip (165/165, ruff/mypy clean) before branching
+feat/group-d-activation-and-plan-api from it.
+
+what_was_built (Group D):
+  - E2-S3 (activation_service): activate_subscriber(connection, subscriber_id, dealer_code,
+    settings, activated_at) -> Subscription. FSM validity checked first
+    (InvalidSubscriberStateException, AC-5) before any rule; KYC -> dealer -> MNP checked in
+    sequence (AC-2/3/4), each independently testable; success transitions PENDING_KYC->ACTIVE
+    + appends a StateTransition (AC-1). Dealer validation is a real DealerMaster lookup, not a
+    hardcoded sentinel-string check. AC-6's double-activation race needed no new DB mechanism:
+    the Group B partial unique index already guards UPDATE, not just INSERT; the race-loser's
+    UPDATE raises sqlite3.IntegrityError, caught and re-raised as DuplicateActiveSubscriptionError
+    (reused from E2-S2). Extended subscriber_repository.py with get_subscription_by_subscriber_id
+    + activate_subscription; added ActivationRejectedError (carries the specific ReasonCode) to
+    types/exceptions.py. 8 new service tests + 5 new repository tests.
+  - E3-S3 (plan_router): first real business router beyond health. POST /api/admin/plans (201),
+    POST .../publish (200, published:true), PUT /api/admin/plans/{id} (409 PLAN_VERSION_IMMUTABLE
+    on a published version), GET /api/admin/plans (full history). All 4 gated by
+    Depends(require_role(ADMIN)) reusing E1-S4's deps.py pattern exactly as instructed, on top of
+    E3-S2's own independent admin check. Added get_db_connection (api/deps.py, first real
+    per-request DB dependency) and a startup lifespan (api/main.py) that applies the schema once.
+    FOUND AND FIXED a real gap: register_exception_handlers(app) had never actually been wired
+    into the production app (create_app()) — only into ad hoc test-only apps — so every real
+    401/403 would have 500'd instead. Fixed inside create_app(). Added
+    plan_repository.get_plan_version_by_id (a global, non-plan_id-scoped lookup, since the URL
+    only carries plan_version_id) and list_all_plan_versions. Response schemas type money fields
+    as `str` not `Decimal` — verified necessary by a dedicated test asserting the raw JSON text
+    contains `"price":"849.00"` with quotes (Pydantic's default Decimal encoding would emit a
+    bare number otherwise, violating the API contract). Fixed test_health.py (Group B, already
+    merged) to build a fresh create_app() per test with DB_PATH monkeypatched to an isolated temp
+    file, since it now triggers a disk-touching lifespan on every TestClient(app) — was about to
+    write a stray DB file to the real default path on every test run otherwise. Added
+    *.db/backend/data/ to .gitignore (had zero SQLite-artifact exclusions before this story).
+    11 new integration tests for the plan API (all 5 ACs + 404-on-unknown-id for both routes
+    that need it) + 2 for the new error handler + 2 for get_db_connection.
+
+next_action: coordinator to independently re-verify (full backend suite + ruff + mypy) before
+  merging feat/group-d-activation-and-plan-api into develop; then write sprint-contracts/group-d.json
+  and hand off to evaluator. After Group D evaluation, Group E (E2-S4 registration/activation API,
+  E3-S4 admin plan catalog UI, E4-S3 plan change service, E5-S2 suspend/resume service, E5-S3
+  port-out service) is next per specs/stories/dependency-graph.md.

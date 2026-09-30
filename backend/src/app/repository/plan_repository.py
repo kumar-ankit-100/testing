@@ -111,6 +111,33 @@ def list_versions(connection: sqlite3.Connection, plan_id: str) -> list[PlanVers
     return [version for row in rows if (version := _row_to_plan_version(row)) is not None]
 
 
+def get_plan_version_by_id(
+    connection: sqlite3.Connection, plan_version_id: str
+) -> PlanVersion | None:
+    """Return the version with plan_version_id, or None — a global lookup
+    across all plans, not scoped to a single plan_id (E3-S3: the admin
+    API's publish/edit routes receive only plan_version_id in the URL).
+    """
+    row = connection.execute(
+        f"SELECT {_COLUMNS} FROM plan_versions WHERE plan_version_id = ?",
+        (plan_version_id,),
+    ).fetchone()
+    return _row_to_plan_version(row)
+
+
+def list_all_plan_versions(connection: sqlite3.Connection) -> list[PlanVersion]:
+    """Return every version across every plan_id, ordered by plan_id then
+    version_number — the full catalog history (E3-S3 AC-4).
+    """
+    rows = connection.execute(
+        f"""
+        SELECT {_COLUMNS} FROM plan_versions
+        ORDER BY plan_id ASC, version_number ASC
+        """
+    ).fetchall()
+    return [version for row in rows if (version := _row_to_plan_version(row)) is not None]
+
+
 def _row_to_plan_version(row: tuple[object, ...] | None) -> PlanVersion | None:
     if row is None:
         return None
