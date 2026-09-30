@@ -171,3 +171,29 @@ BEFORE DELETE ON port_out_events
 BEGIN
     SELECT RAISE(ABORT, 'port_out_events: rows are never deleted, only closed');
 END;
+
+-- E6-S1: csr_overrides — fully append-only audit trail, same shape as
+-- billing_records/state_transitions. actor, reason_code, and created_at
+-- are NOT NULL at the DB level, matching the CSROverride dataclass's
+-- non-Optional str fields (AC-2).
+CREATE TABLE IF NOT EXISTS csr_overrides (
+    override_id TEXT PRIMARY KEY,
+    subscription_id TEXT NOT NULL REFERENCES subscriptions (subscription_id),
+    actor TEXT NOT NULL,
+    reason_code TEXT NOT NULL,
+    overridden_action TEXT NOT NULL CHECK (overridden_action IN ('ACTIVATION', 'PLAN_CHANGE')),
+    original_rejection_reason TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_csr_overrides_no_update
+BEFORE UPDATE ON csr_overrides
+BEGIN
+    SELECT RAISE(ABORT, 'csr_overrides: rows are append-only, update is not permitted');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_csr_overrides_no_delete
+BEFORE DELETE ON csr_overrides
+BEGIN
+    SELECT RAISE(ABORT, 'csr_overrides: rows are append-only, delete is not permitted');
+END;
