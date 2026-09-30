@@ -11,6 +11,7 @@ from app.repository.plan_repository import (
     get_published_version,
     list_versions,
     publish_plan_version,
+    update_draft_plan_version,
 )
 from app.types.enums import PlanType
 from app.types.plan import PlanVersion
@@ -148,3 +149,31 @@ def test_republishing_an_already_published_version_is_rejected(
 
     with pytest.raises(sqlite3.IntegrityError):
         publish_plan_version(sqlite_connection, draft.plan_version_id, datetime.now(UTC))
+
+
+def test_update_draft_plan_version_changes_price_and_terms(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    draft = _build_draft("PLAN-5G", 1, "799.00")
+    create_plan_version(sqlite_connection, draft)
+
+    update_draft_plan_version(
+        sqlite_connection, draft.plan_version_id, Decimal("849.00"), {"data_gb": 150}
+    )
+
+    updated = list_versions(sqlite_connection, "PLAN-5G")[0]
+    assert updated.price == Decimal("849.00")
+    assert updated.terms == {"data_gb": 150}
+
+
+def test_update_draft_plan_version_on_an_already_published_row_is_rejected(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    draft = _build_draft("PLAN-5G", 1, "799.00")
+    create_plan_version(sqlite_connection, draft)
+    publish_plan_version(sqlite_connection, draft.plan_version_id, _PUBLISHED_AT)
+
+    with pytest.raises(sqlite3.IntegrityError):
+        update_draft_plan_version(
+            sqlite_connection, draft.plan_version_id, Decimal("1.00"), {}
+        )

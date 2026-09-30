@@ -58,6 +58,26 @@ def publish_plan_version(
     connection.commit()
 
 
+def update_draft_plan_version(
+    connection: sqlite3.Connection,
+    plan_version_id: str,
+    price: Decimal,
+    terms: dict[str, object],
+) -> None:
+    """Update a draft (unpublished) version's price/terms.
+
+    Raises sqlite3.IntegrityError if plan_version_id is already published
+    (trg_plan_versions_immutable_once_published fires on the UPDATE) — the
+    service layer checks first and raises PlanVersionImmutableError for a
+    friendlier error; this trigger is the ultimate backstop (E3-S2 AC-3).
+    """
+    connection.execute(
+        "UPDATE plan_versions SET price = ?, terms = ? WHERE plan_version_id = ?",
+        (str(price), json.dumps(terms), plan_version_id),
+    )
+    connection.commit()
+
+
 def get_published_version(connection: sqlite3.Connection, plan_id: str) -> PlanVersion | None:
     """Return the currently published version for plan_id.
 
