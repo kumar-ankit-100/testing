@@ -12,7 +12,10 @@ from app.repository.subscriber_repository import (
     get_active_subscription_by_mobile,
     get_subscriber_by_id,
     get_subscriber_by_mobile,
+    get_subscription_by_id,
     get_subscription_by_subscriber_id,
+    update_subscription_plan,
+    update_subscription_state,
 )
 from app.types.enums import PlanType, SubscriberState
 from app.types.subscriber import Subscriber
@@ -303,3 +306,82 @@ def test_activate_subscription_raises_integrity_error_for_a_second_active_mobile
 
     with pytest.raises(sqlite3.IntegrityError):
         activate_subscription(sqlite_connection, subscription_b.subscription_id, _NOW)
+
+
+def test_get_subscription_by_id_finds_the_matching_row(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0013-4e11-9f22-333344445555", "9876540013")
+    create_subscriber(sqlite_connection, subscriber)
+    subscription = _build_subscription(
+        "c2b3d4e5-0013-4f22-8a33-444455556666",
+        subscriber.subscriber_id,
+        subscriber.mobile_number,
+        SubscriberState.ACTIVE,
+    )
+    create_subscription(sqlite_connection, subscription)
+
+    found = get_subscription_by_id(sqlite_connection, subscription.subscription_id)
+
+    assert found == subscription
+
+
+def test_get_subscription_by_id_returns_none_when_not_found(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    assert get_subscription_by_id(sqlite_connection, "does-not-exist") is None
+
+
+def test_update_subscription_state_changes_state_and_updated_at(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0014-4e11-9f22-333344445555", "9876540014")
+    create_subscriber(sqlite_connection, subscriber)
+    subscription = _build_subscription(
+        "c2b3d4e5-0014-4f22-8a33-444455556666",
+        subscriber.subscriber_id,
+        subscriber.mobile_number,
+        SubscriberState.ACTIVE,
+    )
+    create_subscription(sqlite_connection, subscription)
+    changed_at = datetime(2026, 2, 5, 11, 0, tzinfo=UTC)
+
+    update_subscription_state(
+        sqlite_connection, subscription.subscription_id, SubscriberState.SUSPENDED, changed_at
+    )
+
+    reloaded = get_subscription_by_id(sqlite_connection, subscription.subscription_id)
+    assert reloaded is not None
+    assert reloaded.state == SubscriberState.SUSPENDED
+    assert reloaded.updated_at == changed_at
+    assert reloaded.activated_at == subscription.activated_at  # untouched
+
+
+def test_update_subscription_plan_changes_current_plan_version_id(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    subscriber = _build_subscriber("b1a2c3d4-0015-4e11-9f22-333344445555", "9876540015")
+    create_subscriber(sqlite_connection, subscriber)
+    subscription = Subscription(
+        subscription_id="c2b3d4e5-0015-4f22-8a33-444455556666",
+        subscriber_id=subscriber.subscriber_id,
+        mobile_number=subscriber.mobile_number,
+        plan_type=PlanType.POSTPAID,
+        state=SubscriberState.ACTIVE,
+        current_plan_version_id="PLAN-5G-v1",
+        dealer_code=None,
+        created_at=_NOW,
+        activated_at=_NOW,
+        updated_at=_NOW,
+    )
+    create_subscription(sqlite_connection, subscription)
+    changed_at = datetime(2026, 2, 6, 12, 0, tzinfo=UTC)
+
+    update_subscription_plan(
+        sqlite_connection, subscription.subscription_id, "PLAN-5G-v2", changed_at
+    )
+
+    reloaded = get_subscription_by_id(sqlite_connection, subscription.subscription_id)
+    assert reloaded is not None
+    assert reloaded.current_plan_version_id == "PLAN-5G-v2"
+    assert reloaded.updated_at == changed_at

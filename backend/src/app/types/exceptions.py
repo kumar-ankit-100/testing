@@ -74,3 +74,53 @@ class ActivationRejectedError(Exception):
     def __init__(self, reason_code: ReasonCode) -> None:
         self.reason_code = reason_code
         super().__init__(f"Activation rejected: {reason_code.value}")
+
+
+class CoolingPeriodNotElapsedError(Exception):
+    """Raised when finalizing a port-out before its 7-day cooling period
+    has elapsed (E5-S3 AC-4). reason_code: COOLING_PERIOD_NOT_ELAPSED.
+    """
+
+    def __init__(self, subscription_id: str) -> None:
+        self.subscription_id = subscription_id
+        super().__init__(
+            f"Port-out for subscription {subscription_id!r} cannot be finalized: "
+            "cooling period has not elapsed"
+        )
+
+
+class MinTenureNotMetError(Exception):
+    """Raised when a plan change is requested before the minimum-tenure
+    period has elapsed (E4-S3 AC-1). reason_code: MIN_TENURE_NOT_MET.
+    """
+
+    def __init__(self, subscription_id: str) -> None:
+        self.subscription_id = subscription_id
+        super().__init__(
+            f"Subscription {subscription_id!r} has not met the minimum tenure period"
+        )
+
+
+class SubscriptionSuspendedError(Exception):
+    """Raised when a plan change is requested on a SUSPENDED subscription
+    (E4-S3 AC-2). reason_code: SUBSCRIPTION_SUSPENDED.
+    """
+
+    def __init__(self, subscription_id: str) -> None:
+        self.subscription_id = subscription_id
+        super().__init__(f"Subscription {subscription_id!r} is suspended")
+
+
+class SubscriptionNotActiveError(Exception):
+    """Raised when a plan change is requested on a subscription that is
+    neither ACTIVE nor SUSPENDED (e.g. PENDING_KYC, PORT_OUT_REQUESTED,
+    PORTED_OUT, TERMINATED). reason_code: INVALID_STATE_TRANSITION.
+    """
+
+    def __init__(self, subscription_id: str, current_state: SubscriberState) -> None:
+        self.subscription_id = subscription_id
+        self.current_state = current_state
+        super().__init__(
+            f"Subscription {subscription_id!r} is {current_state.value}, "
+            "not eligible for a plan change"
+        )

@@ -44,7 +44,10 @@ from app.repository.subscriber_repository import (
     get_active_subscription_by_mobile,
     get_subscriber_by_id,
     get_subscriber_by_mobile,
+    get_subscription_by_id,
     get_subscription_by_subscriber_id,
+    update_subscription_plan,
+    update_subscription_state,
 )
 from app.repository.user_repository import (
     create_user,
@@ -74,6 +77,7 @@ __all__ = [
     "get_published_version",
     "get_subscriber_by_id",
     "get_subscriber_by_mobile",
+    "get_subscription_by_id",
     "get_subscription_by_subscriber_id",
     "get_user_by_id",
     "get_user_by_mobile",
@@ -87,4 +91,6 @@ __all__ = [
     "plan_mix_distribution",
     "publish_plan_version",
     "update_draft_plan_version",
+    "update_subscription_plan",
+    "update_subscription_state",
 ]
