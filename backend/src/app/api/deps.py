@@ -1,14 +1,16 @@
 """Auth dependency injection: current_principal, require_role,
-require_own_subscriber (E1-S4).
+require_own_subscriber (E1-S4); DB connection dependency (E3-S3).
 
 API layer — imports Types, Config, Repository, Service only.
 """
 
-from collections.abc import Callable
+import sqlite3
+from collections.abc import Callable, Iterator
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.config.db import create_connection
 from app.config.settings import Settings, get_settings
 from app.service.auth_service import decode_access_token
 from app.types.auth import Principal
@@ -64,3 +66,20 @@ def require_own_subscriber(
     if principal.role == Role.SUBSCRIBER and principal.subscriber_id != subscriber_id:
         raise AuthorizationError("Subscribers may only access their own subscription data")
     return principal
+
+
+def get_db_connection(
+    settings: Settings = Depends(get_settings),
+) -> Iterator[sqlite3.Connection]:
+    """Yield a request-scoped SQLite connection, closed after the request.
+
+    The schema is applied once at app startup (see api.main's lifespan),
+    not per request — this dependency only opens/closes a connection.
+    `settings` is itself a dependency (see current_principal's docstring
+    for why) so tests can point DB_PATH at an isolated temp file.
+    """
+    connection = create_connection(settings.db_path)
+    try:
+        yield connection
+    finally:
+        connection.close()
