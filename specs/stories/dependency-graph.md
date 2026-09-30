@@ -15,6 +15,7 @@ graph TD
     E1_S3["E1-S3: Structured JSON logging with PII masking"]
     E1_S4["E1-S4: Role-based auth and controller-level authorization"]
     E1_S5["E1-S5: Health check endpoint"]
+    E1_S6["E1-S6: Auth login endpoint"]
     E2_S1["E2-S1: Subscriber repository and seeded dealer master"]
     E2_S2["E2-S2: Subscriber self-registration service"]
     E2_S3["E2-S3: Rule-based activation engine (KYC, dealer, MNP)"]
@@ -54,7 +55,10 @@ graph TD
     E1_S4 --> E2_S2
     E2_S2 --> E2_S3
     E2_S3 --> E2_S4
+    E1_S4 --> E1_S6
+    E2_S1 --> E1_S6
     E2_S4 --> E2_S5
+    E1_S6 --> E2_S5
     E1_S1 --> E3_S1
     E1_S2 --> E3_S1
     E3_S1 --> E3_S2
@@ -145,7 +149,8 @@ graph TD
 
 | Story ID | Title | Layer | Depends On |
 |---|---|---|---|
-| E2-S5 | Subscriber self-registration and activation status UI | UI | E2-S4 |
+| E1-S6 | Auth login endpoint | API | E1-S4, E2-S1 |
+| E2-S5 | Subscriber self-registration and activation status UI | UI | E2-S4, E1-S6 |
 | E4-S4 | Plan change API endpoints | API | E4-S3 |
 | E5-S4 | Suspend/resume and port-out API endpoints | API | E5-S2, E5-S3 |
 | E6-S2 | CSR override service — override rejected activation/plan-change | Service | E4-S3 |
