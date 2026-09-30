@@ -6,7 +6,7 @@ groups_remaining: [A, B, C, D, E, F, G, H]
 current_group: none
 current_stories: []
 sprint_contract: none
-last_commit: none
+last_commit: 8a6fcd5 (develop)
 features_passing: 0 / 153
 coverage: 0%
 learned_rules: 0
@@ -14,7 +14,10 @@ blocked_stories: none
 
 phase_1_brd: approved (specs/brd/brd.md)
 phase_2_spec: approved (7 epics, 34 stories, 153 features; specs/stories/*.md, specs/stories/dependency-graph.md, specs/features.json)
-phase_3_design: complete, not yet gated for approval (specs/design/*.md, specs/design/api-contracts.schema.json, specs/design/data-models.schema.json, specs/design/mockups/*.html)
+phase_3_design: approved (specs/design/*.md, specs/design/api-contracts.schema.json, specs/design/data-models.schema.json, specs/design/mockups/*.html)
   amendment: added E6-S5 (termination service) + E6-S6 (termination API) to close the TERMINATED-state gap; spec and design updated together.
+  mockup fixes: identity_proof_ref field name, dealer_code input on activation, port-out/finalize + PORTED_OUT state, MNP Passed funnel stage, subscriptionId variable naming (commit 5ef25a6, merged --no-ff into develop as 8a6fcd5).
 
-next_action: Human approval of Phase 3 design (incl. E6-S5/E6-S6 amendment and the mockup/contract mismatch list), then Phase 4 (/implement)
+git: main = initial scaffold+BRD+spec+design commit only (ef3d581); develop = main + all approved amendments; all further work via feature branches merged --no-ff into develop, no direct commits to main.
+
+next_action: Phase 4 (/implement) — build story groups A through H per specs/stories/dependency-graph.md
