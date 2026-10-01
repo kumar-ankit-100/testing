@@ -71,11 +71,12 @@ export function AdminPlanCatalogPage({
   }
 
   return (
-    <div>
+    <div className="app-shell">
       <h1>Plan Catalog</h1>
       {loading && <p>Loading…</p>}
       {error !== null && <p role="alert">{error}</p>}
 
+      <div className="panel">
       <table>
         <thead>
           <tr>
@@ -111,6 +112,7 @@ export function AdminPlanCatalogPage({
           ))}
         </tbody>
       </table>
+      </div>
 
       {editLockedVersion !== null && (
         <div role="alert" data-testid="edit-locked-message">
@@ -129,7 +131,7 @@ export function AdminPlanCatalogPage({
         </div>
       )}
 
-      <form onSubmit={(event) => void handleSubmit(event)}>
+      <form className="panel" onSubmit={(event) => void handleSubmit(event)}>
         <label htmlFor="draft-price">Monthly price</label>
         <input
           id="draft-price"

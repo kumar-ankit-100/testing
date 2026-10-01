@@ -22,7 +22,7 @@ set -euo pipefail
 cd backend && uv sync && cd ..
 cd frontend && npm ci && cd ..
 [ -f .env.example ] && [ ! -f .env ] && cp .env.example .env
-(cd backend && uv run uvicorn app.main:app --reload --port 8000 &)
+(cd backend && uv run uvicorn app.api.main:app --reload --port 8000 &)
 (cd frontend && npm run dev &)
 curl --retry 5 --retry-delay 2 --retry-connrefused -sf http://localhost:8000/health
 curl --retry 5 --retry-delay 2 --retry-connrefused -sf http://localhost:5173
@@ -38,7 +38,7 @@ Quick reference commands (from `CLAUDE.md`, used identically in dev and CI):
 | `cd frontend && npm test` | Frontend unit tests (vitest) |
 | `cd frontend && npm run lint` | ESLint |
 | `cd frontend && npm run typecheck` | `tsc --noEmit` |
-| `cd backend && uv run uvicorn app.main:app --reload --port 8000` | Run backend |
+| `cd backend && uv run uvicorn app.api.main:app --reload --port 8000` | Run backend |
 | `cd frontend && npm run dev` | Run frontend |
 
 `backend/src/app/api/main.py`'s startup hook applies `repository/schema.sql` (idempotent `CREATE TABLE IF NOT EXISTS` + dealer seed `INSERT OR IGNORE`) so a fresh `telcolane.db` is ready on first boot with no separate migration step, matching E2-S1 AC-3 ("seeded... on application startup/migration").
