@@ -130,6 +130,8 @@ These are new in this pipeline. forge_v2 produced only markdown documents. The `
 
 **Human approval is required before proceeding to `/build`.**
 
+Before presenting for approval, run a contract-to-story coverage check: for every path in `api-contracts.md`'s `paths` object, confirm at least one story in `specs/stories/*.md` names that path (or its router file) in its description or acceptance criteria. An endpoint with zero matching stories is a FAIL, not a note — add a story for it (or extend an existing one) before presenting the gate, the same way a missing `features.json` entry would block `/spec`'s own gate. Do not special-case "infrastructure" endpoints (auth, health, CORS) as exempt — this exact gap (a documented `POST /api/auth/login` with no owning story) shipped undetected through four build groups before an evaluator caught it; see `docs/knowledge-deposits.md` entry 1.
+
 After presenting all artifacts and validation results, ask: "Does this architecture and these mockups look correct? Approve to proceed to `/build`, or provide corrections."
 
 ---

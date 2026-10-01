@@ -1,0 +1,104 @@
+{
+  "group": "E1-S6",
+  "stories": ["E1-S6", "E2-S5 (login+route-guard ACs only)"],
+  "features": ["F154", "F155", "F156", "F157", "F158", "F159", "F160", "F161"],
+  "contract": {
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "auth_router.py imports Types/Config/Repository/Service only (no UI). Frontend: authStorage.ts is Config-layer (no upward imports); client.ts (api/) reads it to attach the bearer token; useAuth.ts (service/) is the only caller of authApi.ts; RouteGuard.tsx is pure/presentational, taking auth state as props rather than calling useAuth() itself."
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy --strict clean on all of backend/src; frontend tsc --noEmit clean. No Any/any usage."
+      },
+      "folder_structure": {
+        "required": true,
+        "description": "api/routers/auth_router.py, api/schemas/auth_schemas.py exist with tests/integration/test_auth_login_api.py; auth_service.py gained hash_password/verify_password; schema.sql seeds 3 demo users (csr_jane/admin_raj/dealer_priya). Frontend: config/authStorage.ts, api/authApi.ts, service/useAuth.ts, ui/components/RouteGuard.tsx, ui/pages/LoginPage.tsx all exist with matching test files; App.tsx calls useAuth() exactly once and passes state down as props (not called independently in RouteGuard/LoginPage)."
+      },
+      "env_vars": {
+        "required": false,
+        "description": "No new environment variables — reuses E1-S4's existing jwt_secret_key/jwt_algorithm/jwt_expiry_minutes."
+      },
+      "migrations": {
+        "required": true,
+        "description": "schema.sql's users table seed grew from empty to 3 demo rows (csr/admin/dealer), applied idempotently via the existing INSERT OR IGNORE pattern — not a new migration mechanism."
+      },
+      "test_checks": [
+        {
+          "id": "grp-e1s6-01", "feature": "F154", "story": "E1-S6", "ac": "AC-1",
+          "description": "Valid seeded staff credentials (CSR, ADMIN) return HTTP 200 with an access_token whose decoded claims carry role and subject.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth_login_api.py::test_staff_login_with_valid_csr_credentials_returns_token_with_role_and_subject tests/integration/test_auth_login_api.py::test_staff_login_with_valid_admin_credentials_returns_200",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e1s6-02", "feature": "F155", "story": "E1-S6", "ac": "AC-2",
+          "description": "A subscriber mobile number with no prior registration returns a pre-registration token (subscriber_id: null); after registration, login returns the populated subscriber_id.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth_login_api.py::test_subscriber_login_with_no_prior_registration_returns_pre_registration_token tests/integration/test_auth_login_api.py::test_subscriber_login_after_registration_returns_populated_subscriber_id",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e1s6-03", "feature": "F156", "story": "E1-S6", "ac": "AC-3",
+          "description": "Invalid staff credentials (wrong password or unknown username) return HTTP 401 with an identical, generic reason code and response shape in both cases.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth_login_api.py::test_staff_login_with_wrong_password_returns_401_generic_reason_code tests/integration/test_auth_login_api.py::test_staff_login_with_unknown_username_returns_the_same_401_response_shape",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e1s6-04", "feature": "F157", "story": "E1-S6", "ac": "AC-4",
+          "description": "Exactly one seeded demo user per CSR/ADMIN/DEALER role exists after schema apply, with password_hash populated via a real PBKDF2 hashing function (never plaintext, salted, verifiable).",
+          "command": "cd backend && uv run pytest -q tests/unit/test_auth_service.py::test_hash_password_never_stores_the_plaintext_password tests/unit/test_auth_service.py::test_verify_password_accepts_the_correct_password tests/unit/test_auth_service.py::test_verify_password_rejects_an_incorrect_password tests/unit/test_auth_service.py::test_hash_password_produces_a_different_hash_each_time_via_a_random_salt tests/unit/test_user_repository.py::test_schema_seeds_exactly_one_demo_user_per_staff_role tests/unit/test_user_repository.py::test_seeded_csr_user_is_findable_by_username",
+          "expected": "6 passed"
+        },
+        {
+          "id": "grp-e1s6-05", "feature": "F158", "story": "E1-S6", "ac": "AC-5",
+          "description": "A login attempt, successful or failed, never logs the raw password or an unmasked mobile number.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth_login_api.py::test_login_attempt_never_logs_the_raw_password tests/integration/test_auth_login_api.py::test_login_attempt_masks_the_mobile_number_in_logs",
+          "expected": "2 passed"
+        },
+        {
+          "id": "grp-e1s6-06", "feature": "F159", "story": "E1-S6", "ac": "AC-6",
+          "description": "A subscriber JWT issued by the real login endpoint for subscriber A is rejected with 403 when used against an endpoint scoped to subscriber B's data (this is the migrated E1-S4 test, now exercising a real-issued token rather than a test-minted one — no separate AC-6 test was written, per the generator's report, since this migration already proves it end to end).",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth.py::test_subscriber_requesting_another_subscribers_data_receives_403",
+          "expected": "1 passed"
+        },
+        {
+          "id": "grp-e1s6-07", "feature": "F160", "story": "E2-S5", "ac": "AC-5",
+          "description": "A login page calls POST /api/auth/login, stores the returned token, and the API client attaches it as a bearer token on subsequent calls.",
+          "command": "cd frontend && npx vitest run tests/LoginPage.test.tsx tests/useAuth.test.tsx",
+          "expected": "Test Files 2 passed (2); Tests 8 passed (8)"
+        },
+        {
+          "id": "grp-e1s6-08", "feature": "F161", "story": "E2-S5", "ac": "AC-6",
+          "description": "A role-based route guard renders the fallback (login page) when unauthenticated or when the current role isn't in the allowed set, and renders children otherwise.",
+          "command": "cd frontend && npx vitest run tests/RouteGuard.test.tsx",
+          "expected": "Test Files 1 passed (1); Tests 4 passed (4)"
+        },
+        {
+          "id": "grp-e1s6-09-regression-check", "feature": null, "story": "E1-S4, E3-S3 (regression gate)", "ac": "cross-cutting gate",
+          "description": "The migrated E1-S4 and E3-S3 integration test files, which now obtain tokens through the real login endpoint instead of minting them directly, still pass in full — proving no regression was introduced into already-evaluator-approved Group B/D work.",
+          "command": "cd backend && uv run pytest -q tests/integration/test_auth.py tests/integration/test_plan_api.py",
+          "expected": "20 passed (8 from test_auth.py, grew from 7 to accommodate the real-subscriber seeding this migration needed; 12 from test_plan_api.py, unchanged — both verified via separate isolated runs before writing this contract)"
+        },
+        {
+          "id": "grp-e1s6-10-backend-full-suite", "feature": null, "story": "all", "ac": "cross-cutting gate",
+          "description": "Full backend test suite, lint, and strict typecheck all clean together.",
+          "command": "cd backend && uv run pytest -q && uv run ruff check . && uv run mypy src/",
+          "expected": "255 passed; ruff: All checks passed!; mypy: Success: no issues found in 54 source files"
+        },
+        {
+          "id": "grp-e1s6-11-backend-coverage", "feature": null, "story": "all", "ac": "cross-cutting gate",
+          "description": "100% statement coverage across all backend source files.",
+          "command": "cd backend && uv run pytest -q --cov=app --cov-report=term-missing",
+          "expected": "TOTAL 100% (1111 or more statements, 0 missing)"
+        },
+        {
+          "id": "grp-e1s6-12-frontend-full-suite", "feature": null, "story": "all", "ac": "cross-cutting gate",
+          "description": "Full frontend test suite, lint, typecheck, and production build all clean together.",
+          "command": "cd frontend && npm test -- --run && npm run lint && npm run typecheck && npm run build",
+          "expected": "Test Files 7 passed (7); Tests 26 passed (26); lint clean; typecheck clean; build succeeds"
+        }
+      ]
+    }
+  },
+  "note_for_evaluator": "This is a fix-loop evaluation, not a normal story group: it closes the auth-login gap found during Group E's evaluation. grp-e1s6-09-regression-check is the most important entry here — verify it carefully, since test_auth.py and test_plan_api.py were already evaluator-approved in Groups B and D and this story modified their token-acquisition mechanism. All counts in this contract were independently verified via isolated pytest/vitest runs before writing expected strings. api_checks/playwright_checks remain empty for the same reason as every prior group."
+}
