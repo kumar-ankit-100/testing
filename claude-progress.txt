@@ -607,8 +607,43 @@ what_was_built (E1-S6) — full detail in iteration-log.md's "## E1-S6" section:
     useAuth() meant a successful login would never be visible to the guard's own hook instance;
     fixed by lifting the one useAuth() call to App.tsx and passing state down as props.
 
-next_action: coordinator to independently re-verify (full backend suite + ruff + mypy, full
-  frontend suite + lint + typecheck + build) before merging feat/e1-s6-auth-login into develop;
-  then write a sprint contract and hand off to evaluator. After E1-S6 evaluation, Group F (E2-S5
-  subscriber UI remaining four ACs, E4-S4 plan change API, E5-S4 suspend/resume+port-out API,
-  E6-S2 CSR override service, E6-S5 termination service, E7-S2 reporting service) is next.
+=== Session 8 ===
+date: 2026-10-01
+mode: evaluator + docs
+groups_completed: [A, B, C, D, E] (unchanged — E1-S6 is a standalone fix-loop story, not a group)
+groups_remaining: [F, G, H]
+current_group: none
+sprint_contract: sprint-contracts/group-e1s6.json (8 features F154-F161, 12 test_checks)
+
+fix_loop (E1-S6, auth-login gap):
+  User decision: fix now (spec-first), before Group F. Added E1-S6 (specs/stories/E1-S6.md,
+  6 ACs) + 2 new ACs on E2-S5 (login page, route guard), merged to develop as 543c4ec before
+  any implementation started. Implementation (branch feat/e1-s6-auth-login, merged as 125d358):
+  auth_router.py + auth_schemas.py, PBKDF2-HMAC-SHA256 hashing with hmac.compare_digest and a
+  timing-safe dummy-hash check for unknown usernames, 3 seeded demo users (csr_jane/admin_raj/
+  dealer_priya). Migrated the already-evaluator-approved test_auth.py (Group B) and
+  test_plan_api.py (Group D) to use the real login endpoint instead of minting tokens directly
+  — the highest-risk part of this fix. Frontend: authStorage.ts/authApi.ts/useAuth.ts/
+  RouteGuard.tsx/LoginPage.tsx; caught and fixed a real bug (RouteGuard and LoginPage each
+  calling useAuth() independently, so a successful login was invisible to the guard — fixed by
+  lifting the single useAuth() call to App.tsx).
+
+  Coordinator independently re-verified everything before accepting any verdict, including
+  reading auth_service.py directly to confirm hmac.compare_digest (not ==) and the regression
+  check in isolation (test_auth.py + test_plan_api.py: 20 passed, 0 regressions). Evaluator
+  VERDICT: PASS — 12/12 test_checks, all 4 required architecture_checks (layering, typing,
+  folder_structure, migrations; env_vars N/A), independently re-confirmed both security claims
+  itself before returning PASS. Backend: 237->255 tests, ruff/mypy clean, 100% coverage
+  (1036->1111 statements). Frontend: 12->26 tests, lint/typecheck/build clean. features.json
+  grew from 96 to 104 entries, all passing.
+
+  Process change recorded: docs/knowledge-deposits.md entry 1 (contract-endpoint-to-story
+  coverage gap, root cause, fix) + a concrete check added to .claude/skills/design/SKILL.md's
+  Gate section (diff api-contracts.md paths against stories before the /design gate, no
+  "infrastructure endpoint" exemption). Fix-loop trace written to
+  docs/fix-loops/auth-login-gap.md (detected/reproduced/fixed/validated/PR, rubric evidence).
+
+next_action: Group F (E2-S5 subscriber UI's remaining four ACs — registration form, activation
+  status, responsive layout; E4-S4 plan change API; E5-S4 suspend/resume+port-out API; E6-S2 CSR
+  override service; E6-S5 termination service; E7-S2 reporting service) per
+  specs/stories/dependency-graph.md.
