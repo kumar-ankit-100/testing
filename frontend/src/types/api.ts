@@ -6,7 +6,7 @@
  * Types layer — imports only from ./domain.
  */
 
-import type { PlanType, Role } from "./domain";
+import type { PlanType, Role, SubscriberState } from "./domain";
 
 /** Money fields are always JSON strings on the wire (e.g. "499.00"). */
 export type DecimalString = string;
@@ -78,4 +78,30 @@ export interface LoginResponse {
   role: Role;
   subscriber_id: string | null;
   expires_in: number;
+}
+
+/**
+ * POST /api/subscribers/register and GET-style activation status
+ * polling (E2-S5).
+ */
+export interface RegisterSubscriberRequest {
+  mobile_number: string;
+  identity_proof_ref: string;
+  plan_type: PlanType;
+}
+
+export interface RegisterSubscriberResponse {
+  subscriber_id: string;
+  subscription_id: string;
+  state: SubscriberState;
+}
+
+export interface ActivateSubscriberRequest {
+  dealer_code: string;
+}
+
+export interface ActivateSubscriberResponse {
+  subscriber_id: string;
+  state: SubscriberState;
+  activated_at: string;
 }
