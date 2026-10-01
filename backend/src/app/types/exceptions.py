@@ -111,6 +111,15 @@ class SubscriptionSuspendedError(Exception):
         super().__init__(f"Subscription {subscription_id!r} is suspended")
 
 
+class MissingOverrideReasonError(Exception):
+    """Raised when a CSR override is attempted without a reason_code
+    (E6-S2 AC-3). No state change or CSROverride record is written.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("A reason_code is required to perform a CSR override")
+
+
 class SubscriptionNotActiveError(Exception):
     """Raised when a plan change is requested on a subscription that is
     neither ACTIVE nor SUSPENDED (e.g. PENDING_KYC, PORT_OUT_REQUESTED,

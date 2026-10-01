@@ -49,6 +49,7 @@ def commit_plan_change(
     target_plan_version_id: str,
     change_at: datetime,
     settings: Settings,
+    skip_eligibility_checks: bool = False,
 ) -> BillingRecord:
     """Recompute the same pro-rata amount, persist it as a new
     BillingRecord, and update the subscription's current plan (AC-4).
@@ -56,8 +57,14 @@ def commit_plan_change(
     Every call appends a new, independent BillingRecord — the prior
     record is never modified (AC-5), matching billing_repository's
     append-only design.
+
+    If skip_eligibility_checks is True (E6-S2 CSR override support), the
+    minimum-tenure rule is bypassed — but the subscription must still be
+    ACTIVE (not SUSPENDED, not any other state).
     """
-    subscription = _eligible_subscription(connection, subscription_id, change_at, settings)
+    subscription = _eligible_subscription(
+        connection, subscription_id, change_at, settings, skip_eligibility_checks
+    )
     pro_rata_amount = _pro_rata_for_change(
         connection, subscription, target_plan_version_id, change_at
     )
@@ -113,6 +120,7 @@ def _eligible_subscription(
     subscription_id: str,
     change_at: datetime,
     settings: Settings,
+    skip_eligibility_checks: bool = False,
 ) -> Subscription:
     subscription = get_subscription_by_id(connection, subscription_id)
     if subscription is None:
@@ -123,7 +131,8 @@ def _eligible_subscription(
     if subscription.state != SubscriberState.ACTIVE:
         raise SubscriptionNotActiveError(subscription_id, subscription.state)
 
-    _require_minimum_tenure(subscription, change_at, settings)
+    if not skip_eligibility_checks:
+        _require_minimum_tenure(subscription, change_at, settings)
     return subscription
 
 
