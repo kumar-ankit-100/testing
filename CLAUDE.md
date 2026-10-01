@@ -6,7 +6,7 @@ TelcoLane is a telecom Subscriber & Plan Lifecycle Management Platform. It handl
 
 **Backend:** `cd backend && uv run pytest -x -q` | `uv run ruff check --fix .` | `uv run mypy src/`
 **Frontend:** `cd frontend && npm test` | `npm run lint` | `npm run typecheck`
-**Full stack:** `cd backend && uv run uvicorn app.main:app --reload --port 8000` and `cd frontend && npm run dev` (see init.sh)
+**Full stack:** `cd backend && uv run uvicorn app.api.main:app --reload --port 8000` and `cd frontend && npm run dev` (see init.sh)
 
 ## Architecture
 

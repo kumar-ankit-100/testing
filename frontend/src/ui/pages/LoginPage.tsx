@@ -42,10 +42,10 @@ export function LoginPage({ onLogin }: LoginPageProps): React.JSX.Element {
   }
 
   return (
-    <div>
+    <div className="auth-shell">
       <h1>Log in</h1>
 
-      <div role="radiogroup" aria-label="Login as">
+      <div className="radio-group" role="radiogroup" aria-label="Login as">
         <label>
           <input
             type="radio"
