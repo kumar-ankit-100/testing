@@ -10,9 +10,9 @@
 -- table(s) and triggers to this same file (schema.sql is a documented
 -- cross-cutting file per component-map.md).
 
--- E1-S4: users — backs POST /api/auth/login (not implemented this group).
--- Staff (csr/admin/dealer) rows are seeded elsewhere; subscriber rows are
--- created implicitly by registration (E2-S2, a later group).
+-- E1-S4: users — backs POST /api/auth/login (E1-S6). Subscriber rows are
+-- never created here (login derives a subscriber's identity from the
+-- subscribers table by mobile_number instead, per E1-S6 AC-2).
 CREATE TABLE IF NOT EXISTS users (
     user_id TEXT PRIMARY KEY,
     role TEXT NOT NULL CHECK (role IN ('subscriber', 'csr', 'admin', 'dealer')),
@@ -22,6 +22,33 @@ CREATE TABLE IF NOT EXISTS users (
     subscriber_id TEXT,
     created_at TEXT NOT NULL
 );
+
+-- E1-S6 AC-4: exactly one seeded demo user per staff role (CSR/ADMIN/
+-- DEALER), password_hash via a real KDF (see auth_service.hash_password
+-- — PBKDF2-HMAC-SHA256, 390,000 iterations, random salt). These
+-- password_hash values are the precomputed output of hash_password() for
+-- the synthetic demo passwords documented below; never plaintext.
+-- Synthetic/dummy credentials only, consistent with the dealer/plan seed
+-- data pattern — not real-world secrets.
+--   csr_jane    / CsrDemo!2026Synthetic
+--   admin_raj   / AdminDemo!2026Synthetic
+--   dealer_priya / DealerDemo!2026Synthetic
+INSERT OR IGNORE INTO users (user_id, role, username, password_hash, mobile_number, subscriber_id, created_at) VALUES
+    (
+        '44444444-1111-4000-8000-000000000001', 'csr', 'csr_jane',
+        'pbkdf2_sha256$390000$86cecf8f8581ae86f2b9e15e7b29da07$9184277bd3000214e710c3d9bdafa843e630b06bc5ceed482342075427e45e9d',
+        NULL, NULL, '2026-01-01T00:00:00+00:00'
+    ),
+    (
+        '44444444-2222-4000-8000-000000000002', 'admin', 'admin_raj',
+        'pbkdf2_sha256$390000$20add052b3336f759e6674cedd9fa626$5d2c7900b19ba2d63578b9e2e44849fe5ea70b4f2cc72ca914363f560dfb3ed9',
+        NULL, NULL, '2026-01-01T00:00:00+00:00'
+    ),
+    (
+        '44444444-3333-4000-8000-000000000003', 'dealer', 'dealer_priya',
+        'pbkdf2_sha256$390000$f5fa8344d5972bae63583eb59996f4d6$696559afc6762e8ea27ebbb57cfa15540932b3171b00341e744de97b5143548e',
+        NULL, NULL, '2026-01-01T00:00:00+00:00'
+    );
 
 -- E2-S1: subscribers, subscriptions, dealer_master.
 CREATE TABLE IF NOT EXISTS subscribers (

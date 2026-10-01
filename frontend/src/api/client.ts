@@ -1,11 +1,14 @@
 /**
  * Shared fetch wrapper — the only module that calls fetch() directly
  * (E3-S4 introduces this; every later UI story's api/*.ts reuses it).
+ * Attaches the stored bearer token automatically (E1-S6/E2-S5), if one
+ * is present — callers don't need to pass it themselves.
  *
  * API layer (this is the frontend's Repository-equivalent boundary, per
  * folder-structure.md's "Layering note").
  */
 
+import { getStoredToken } from "../config/authStorage";
 import { API_BASE_URL } from "../config/env";
 import type { ApiErrorEnvelope } from "../types/api";
 
@@ -31,10 +34,12 @@ function isApiErrorEnvelope(value: unknown): value is ApiErrorEnvelope {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getStoredToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(token !== null ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
   });
