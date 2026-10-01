@@ -1,4 +1,5 @@
-"""Access-token issuance and verification (E1-S4).
+"""Access-token issuance and verification (E1-S4); password hashing for
+staff login (E1-S6).
 
 Service layer — imports Types and Config only for this module.
 
@@ -6,8 +7,16 @@ The bearer token is self-contained (role + subscriber_id embedded as
 claims); per system-design.md 5.4, ownership checks compare the token's
 subscriber_id claim directly against the requested path parameter, with
 no repository round-trip needed on the authorization hot path.
+
+Password hashing uses PBKDF2-HMAC-SHA256 (stdlib hashlib, NIST-recommended
+KDF) with a random per-password salt — no extra dependency needed beyond
+the standard library, and never a plaintext or trivially-reversible
+encoding.
 """
 
+import hashlib
+import hmac
+import os
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -20,6 +29,10 @@ from app.types.exceptions import AuthenticationError
 _SUBJECT_CLAIM = "sub"
 _ROLE_CLAIM = "role"
 _SUBSCRIBER_ID_CLAIM = "subscriber_id"
+
+_PBKDF2_SCHEME = "pbkdf2_sha256"
+_PBKDF2_ITERATIONS = 390_000
+_SALT_BYTES = 16
 
 
 def create_access_token(principal: Principal, settings: Settings) -> str:
@@ -64,3 +77,39 @@ def _principal_from_claims(payload: dict[str, object]) -> Principal:
         raise AuthenticationError("Access token has a malformed subscriber_id claim")
 
     return Principal(user_id=user_id, role=role, subscriber_id=subscriber_id)
+
+
+def hash_password(password: str) -> str:
+    """Hash password with PBKDF2-HMAC-SHA256 and a fresh random salt.
+
+    Returns a self-describing string: "pbkdf2_sha256$<iterations>$<salt
+    hex>$<derived key hex>", so verify_password needs no external state.
+    """
+    salt = os.urandom(_SALT_BYTES)
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, _PBKDF2_ITERATIONS)
+    return f"{_PBKDF2_SCHEME}${_PBKDF2_ITERATIONS}${salt.hex()}${derived.hex()}"
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Return True if password matches password_hash, False otherwise.
+
+    Never raises on a malformed or unrecognized hash string — treats it
+    as a non-match, since that can only mean the stored hash is corrupt
+    or from an unsupported scheme, not that the caller made a mistake.
+    """
+    parts = password_hash.split("$")
+    if len(parts) != 4:
+        return False
+    scheme, iterations_str, salt_hex, expected_hex = parts
+    if scheme != _PBKDF2_SCHEME:
+        return False
+
+    try:
+        iterations = int(iterations_str)
+        salt = bytes.fromhex(salt_hex)
+        expected = bytes.fromhex(expected_hex)
+    except ValueError:
+        return False
+
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    return hmac.compare_digest(derived, expected)
