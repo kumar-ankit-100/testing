@@ -12,10 +12,15 @@ from app.types.exceptions import (
     ActivationRejectedError,
     AuthenticationError,
     AuthorizationError,
+    CoolingPeriodNotElapsedError,
     DuplicateActiveSubscriptionError,
     InvalidMobileNumberError,
     InvalidSubscriberStateException,
+    MinTenureNotMetError,
+    MissingOverrideReasonError,
     PlanVersionImmutableError,
+    SubscriptionNotActiveError,
+    SubscriptionSuspendedError,
 )
 
 
@@ -68,6 +73,36 @@ def register_exception_handlers(app: FastAPI) -> None:
             else ReasonCode.INVALID_STATE_TRANSITION
         )
         return _error_response(409, reason_code, str(exc))
+
+    @app.exception_handler(MinTenureNotMetError)
+    async def _handle_min_tenure_not_met_error(
+        _request: Request, exc: MinTenureNotMetError
+    ) -> JSONResponse:
+        return _error_response(422, ReasonCode.MIN_TENURE_NOT_MET, str(exc))
+
+    @app.exception_handler(SubscriptionSuspendedError)
+    async def _handle_subscription_suspended_error(
+        _request: Request, exc: SubscriptionSuspendedError
+    ) -> JSONResponse:
+        return _error_response(409, ReasonCode.SUBSCRIPTION_SUSPENDED, str(exc))
+
+    @app.exception_handler(SubscriptionNotActiveError)
+    async def _handle_subscription_not_active_error(
+        _request: Request, exc: SubscriptionNotActiveError
+    ) -> JSONResponse:
+        return _error_response(409, ReasonCode.INVALID_STATE_TRANSITION, str(exc))
+
+    @app.exception_handler(CoolingPeriodNotElapsedError)
+    async def _handle_cooling_period_not_elapsed_error(
+        _request: Request, exc: CoolingPeriodNotElapsedError
+    ) -> JSONResponse:
+        return _error_response(422, ReasonCode.COOLING_PERIOD_NOT_ELAPSED, str(exc))
+
+    @app.exception_handler(MissingOverrideReasonError)
+    async def _handle_missing_override_reason_error(
+        _request: Request, exc: MissingOverrideReasonError
+    ) -> JSONResponse:
+        return _error_response(422, ReasonCode.MISSING_OVERRIDE_REASON, str(exc))
 
 
 def _error_response(status_code: int, reason_code: ReasonCode, message: str) -> JSONResponse:
