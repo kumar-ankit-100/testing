@@ -6,7 +6,12 @@ import jwt
 import pytest
 
 from app.config.settings import Settings
-from app.service.auth_service import create_access_token, decode_access_token
+from app.service.auth_service import (
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
 from app.types.auth import Principal
 from app.types.enums import Role
 from app.types.exceptions import AuthenticationError
@@ -120,3 +125,47 @@ def test_decode_access_token_rejects_a_token_with_a_non_string_subscriber_id(
 
     with pytest.raises(AuthenticationError):
         decode_access_token(token, settings)
+
+
+def test_hash_password_never_stores_the_plaintext_password() -> None:
+    password_hash = hash_password("CsrDemo!2026Synthetic")
+
+    assert "CsrDemo!2026Synthetic" not in password_hash
+    assert password_hash.startswith("pbkdf2_sha256$")
+
+
+def test_verify_password_accepts_the_correct_password() -> None:
+    password_hash = hash_password("CsrDemo!2026Synthetic")
+
+    assert verify_password("CsrDemo!2026Synthetic", password_hash) is True
+
+
+def test_verify_password_rejects_an_incorrect_password() -> None:
+    password_hash = hash_password("CsrDemo!2026Synthetic")
+
+    assert verify_password("wrong-password", password_hash) is False
+
+
+def test_hash_password_produces_a_different_hash_each_time_via_a_random_salt() -> None:
+    first = hash_password("CsrDemo!2026Synthetic")
+    second = hash_password("CsrDemo!2026Synthetic")
+
+    assert first != second
+    assert verify_password("CsrDemo!2026Synthetic", first) is True
+    assert verify_password("CsrDemo!2026Synthetic", second) is True
+
+
+def test_verify_password_rejects_a_malformed_hash_string() -> None:
+    assert verify_password("any-password", "not-a-real-hash") is False
+
+
+def test_verify_password_rejects_an_unrecognized_hash_scheme() -> None:
+    assert verify_password("any-password", "md5$1$deadbeef$deadbeef") is False
+
+
+def test_verify_password_rejects_a_hash_with_non_numeric_iterations() -> None:
+    assert verify_password("any-password", "pbkdf2_sha256$not-a-number$aabb$ccdd") is False
+
+
+def test_verify_password_rejects_a_hash_with_non_hex_salt() -> None:
+    assert verify_password("any-password", "pbkdf2_sha256$1000$not-hex-zz$ccdd") is False

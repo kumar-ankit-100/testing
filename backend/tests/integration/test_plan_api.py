@@ -1,4 +1,10 @@
-"""Integration tests for the plan catalog admin API (E3-S3)."""
+"""Integration tests for the plan catalog admin API (E3-S3).
+
+Bearer tokens are obtained through the real POST /api/auth/login
+endpoint (E1-S6), using the seeded demo staff credentials, rather than
+minted directly via create_access_token() — this suite proves the admin
+router's auth actually works against a real login flow.
+"""
 
 from collections.abc import Iterator
 from pathlib import Path
@@ -8,11 +14,12 @@ from fastapi.testclient import TestClient
 
 from app.api.main import create_app
 from app.config.settings import Settings
-from app.service.auth_service import create_access_token
-from app.types.auth import Principal
-from app.types.enums import Role
 
 _JWT_SECRET = "integration-test-secret-at-least-32-bytes-long"
+_ADMIN_USERNAME = "admin_raj"
+_ADMIN_PASSWORD = "AdminDemo!2026Synthetic"
+_CSR_USERNAME = "csr_jane"
+_CSR_PASSWORD = "CsrDemo!2026Synthetic"
 
 
 @pytest.fixture
@@ -28,15 +35,20 @@ def client(settings: Settings) -> Iterator[TestClient]:
         yield test_client
 
 
-def _token_for(role: Role) -> str:
-    principal = Principal(user_id=f"user-{role.value}", role=role, subscriber_id=None)
-    return create_access_token(
-        principal, Settings(_env_file=None, jwt_secret_key=_JWT_SECRET)
+def _login(client: TestClient, username: str, password: str) -> str:
+    response = client.post(
+        "/api/auth/login", json={"username": username, "password": password}
     )
+    token: str = response.json()["access_token"]
+    return token
 
 
-def _admin_header() -> dict[str, str]:
-    return {"Authorization": f"Bearer {_token_for(Role.ADMIN)}"}
+def _admin_header(client: TestClient) -> dict[str, str]:
+    return {"Authorization": f"Bearer {_login(client, _ADMIN_USERNAME, _ADMIN_PASSWORD)}"}
+
+
+def _csr_header(client: TestClient) -> dict[str, str]:
+    return {"Authorization": f"Bearer {_login(client, _CSR_USERNAME, _CSR_PASSWORD)}"}
 
 
 def _create_draft(client: TestClient, plan_id: str = "PLAN-5G") -> dict[str, object]:
@@ -49,7 +61,7 @@ def _create_draft(client: TestClient, plan_id: str = "PLAN-5G") -> dict[str, obj
             "price": "799.00",
             "terms": {"data_gb": 100},
         },
-        headers=_admin_header(),
+        headers=_admin_header(client),
     )
     assert response.status_code == 201
     body: dict[str, object] = response.json()
@@ -71,7 +83,7 @@ def test_publish_plan_version_returns_200_with_published_true(client: TestClient
     draft = _create_draft(client)
 
     response = client.post(
-        f"/api/admin/plans/{draft['plan_version_id']}/publish", headers=_admin_header()
+        f"/api/admin/plans/{draft['plan_version_id']}/publish", headers=_admin_header(client)
     )
 
     assert response.status_code == 200
@@ -86,12 +98,14 @@ def test_put_on_an_already_published_version_returns_409_with_immutability_messa
 ) -> None:
     """AC-3."""
     draft = _create_draft(client)
-    client.post(f"/api/admin/plans/{draft['plan_version_id']}/publish", headers=_admin_header())
+    client.post(
+        f"/api/admin/plans/{draft['plan_version_id']}/publish", headers=_admin_header(client)
+    )
 
     response = client.put(
         f"/api/admin/plans/{draft['plan_version_id']}",
         json={"price": "1.00"},
-        headers=_admin_header(),
+        headers=_admin_header(client),
     )
 
     assert response.status_code == 409
@@ -106,7 +120,7 @@ def test_put_on_a_draft_version_updates_price(client: TestClient) -> None:
     response = client.put(
         f"/api/admin/plans/{draft['plan_version_id']}",
         json={"price": "849.00"},
-        headers=_admin_header(),
+        headers=_admin_header(client),
     )
 
     assert response.status_code == 200
@@ -120,10 +134,10 @@ def test_get_plan_list_returns_full_version_history_including_superseded(
 ) -> None:
     """AC-4."""
     v1 = _create_draft(client, plan_id="PLAN-5G")
-    client.post(f"/api/admin/plans/{v1['plan_version_id']}/publish", headers=_admin_header())
+    client.post(f"/api/admin/plans/{v1['plan_version_id']}/publish", headers=_admin_header(client))
     v2 = _create_draft(client, plan_id="PLAN-5G")  # a second version, superseding v1
 
-    response = client.get("/api/admin/plans", headers=_admin_header())
+    response = client.get("/api/admin/plans", headers=_admin_header(client))
 
     assert response.status_code == 200
     plans = response.json()["plans"]
@@ -147,7 +161,7 @@ def test_non_admin_receives_403_for_create_and_list(
     client: TestClient, method: str, path_suffix: str, json_body: dict[str, object] | None
 ) -> None:
     """AC-5 (create, list)."""
-    csr_header = {"Authorization": f"Bearer {_token_for(Role.CSR)}"}
+    csr_header = _csr_header(client)
 
     response = client.request(
         method, f"/api/admin/plans{path_suffix}", json=json_body, headers=csr_header
@@ -159,7 +173,7 @@ def test_non_admin_receives_403_for_create_and_list(
 def test_non_admin_receives_403_for_publish(client: TestClient) -> None:
     """AC-5 (publish)."""
     draft = _create_draft(client)
-    csr_header = {"Authorization": f"Bearer {_token_for(Role.CSR)}"}
+    csr_header = _csr_header(client)
 
     response = client.post(
         f"/api/admin/plans/{draft['plan_version_id']}/publish", headers=csr_header
@@ -171,7 +185,7 @@ def test_non_admin_receives_403_for_publish(client: TestClient) -> None:
 def test_non_admin_receives_403_for_update(client: TestClient) -> None:
     """AC-5 (update)."""
     draft = _create_draft(client)
-    csr_header = {"Authorization": f"Bearer {_token_for(Role.CSR)}"}
+    csr_header = _csr_header(client)
 
     response = client.put(
         f"/api/admin/plans/{draft['plan_version_id']}",
@@ -191,7 +205,7 @@ def test_price_fields_are_serialized_as_strings_not_json_numbers(client: TestCli
     response = client.put(
         f"/api/admin/plans/{draft['plan_version_id']}",
         json={"price": "849.00"},
-        headers=_admin_header(),
+        headers=_admin_header(client),
     )
 
     raw_text = response.text
@@ -199,7 +213,7 @@ def test_price_fields_are_serialized_as_strings_not_json_numbers(client: TestCli
 
 
 def test_publish_an_unknown_plan_version_id_returns_404(client: TestClient) -> None:
-    response = client.post("/api/admin/plans/does-not-exist/publish", headers=_admin_header())
+    response = client.post("/api/admin/plans/does-not-exist/publish", headers=_admin_header(client))
 
     assert response.status_code == 404
     assert response.json()["error"]["reason_code"] == "NOT_FOUND"
@@ -207,7 +221,7 @@ def test_publish_an_unknown_plan_version_id_returns_404(client: TestClient) -> N
 
 def test_update_an_unknown_plan_version_id_returns_404(client: TestClient) -> None:
     response = client.put(
-        "/api/admin/plans/does-not-exist", json={"price": "1.00"}, headers=_admin_header()
+        "/api/admin/plans/does-not-exist", json={"price": "1.00"}, headers=_admin_header(client)
     )
 
     assert response.status_code == 404
