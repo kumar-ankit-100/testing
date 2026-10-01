@@ -245,5 +245,64 @@ Notable in-flight findings:
 Result: backend — 237 tests, 100% line coverage across 1036 statements,
 ruff/mypy clean, zero upward-layer imports. frontend — 12 vitest tests,
 eslint clean, tsc --noEmit clean, production build succeeds. All commits
-on feat/group-e-lifecycle-services-and-apis. Awaiting evaluator review
-(not self-assessed by the generator).
+on feat/group-e-lifecycle-services-and-apis. Passed evaluator review
+(count unspecified to this log at the time of writing). Confirmed
+develop tip = d00baa1 before starting E1-S6.
+
+## E1-S6 (auth login endpoint — closes the Group D/E-flagged gap)
+
+Not a numbered dependency-graph group; a standalone fix story inserted
+ahead of Group F once the coordinator confirmed, during Group E
+evaluation, that the documented-but-never-built POST /api/auth/login
+gap needed closing before any more routers assume it exists. Scope:
+backend login endpoint + demo user seeding + migrating two already-
+evaluator-approved integration test files to use it, plus E2-S5's two
+auth-related ACs (login page + route guard) on the frontend — E2-S5's
+other four ACs stay deferred to its own future story.
+
+Notable in-flight findings:
+  - Password hashing: PBKDF2-HMAC-SHA256 (stdlib hashlib, 390,000
+    iterations, random per-password salt) rather than adding bcrypt/
+    passlib as a dependency — no story mandated a specific scheme, and
+    stdlib avoids a new dependency for a capstone-scope demo. Seed
+    password_hash values in schema.sql are the precomputed, verified
+    output of hash_password() for three synthetic demo accounts, not
+    computed at schema-apply time (schema.sql is static SQL).
+  - AC-3's "no user-enumeration signal" was read as applying to timing,
+    not just response shape: a precomputed dummy hash is checked via
+    verify_password() even when the username doesn't exist, so the
+    same code path always runs regardless of which failure case it is.
+  - Subscriber login derives subscriber_id from subscriber_repository
+    directly (no users-table row ever created for subscribers) —
+    simpler than the alternative of writing a implicit users-table
+    row per mobile number, and sufficient for AC-2's literal requirement
+    (null for no-prior-registration, real subscriber_id once registered).
+  - Migrating test_auth.py (E1-S4) required also seeding a real
+    subscriber row with a known mobile_number/subscriber_id in its
+    fixture, and wiring the real auth_router onto its existing
+    dummy-route test app — the dummy protected routes themselves were
+    left untouched. One assertion had to loosen (a staff principal's
+    user_id, previously a literal "user-csr", is now a real seeded
+    UUID — asserted as truthy rather than to an exact string). Every
+    other assertion's intent is unchanged. Full backend suite re-run
+    after both migrations (237 -> 255 tests) confirmed zero regressions
+    beyond that one intentional loosening.
+  - Frontend: caught and fixed a real state-sync bug before writing any
+    test for it. The first draft had both RouteGuard and LoginPage call
+    useAuth() independently — since each call creates its own isolated
+    useState, a successful login in LoginPage's instance would never be
+    seen by RouteGuard's separate instance, so the UI would never
+    actually switch away from the login page after a successful login.
+    Fixed by lifting the single useAuth() call to App.tsx and passing
+    state/actions down as props to both components (RouteGuard becomes
+    a pure/presentational component as a result — easier to test too).
+  - config/authStorage.ts (Config layer) is the shared source of truth
+    between api/client.ts (reads the token to attach it automatically to
+    every request) and service/useAuth.ts (writes it on login/logout),
+    so client.ts never needs to import upward from service/.
+
+Result: backend 255 tests (was 237), 100% coverage across 1111
+statements, ruff/mypy clean. frontend 26 tests (was 12), eslint/tsc
+clean, production build succeeds, dev server smoke-tested serving the
+login page by default. One commit on feat/e1-s6-auth-login. Awaiting
+evaluator review (not self-assessed by the generator).
