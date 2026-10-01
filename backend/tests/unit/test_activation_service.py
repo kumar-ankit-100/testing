@@ -225,3 +225,47 @@ def test_activate_subscriber_raises_for_an_unknown_subscriber_id(
             all_flags_pass_settings,
             _ACTIVATED_AT,
         )
+
+
+def test_activate_subscriber_with_skip_rule_checks_succeeds_despite_a_failing_flag(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    """E6-S2: CSR override support — skip_rule_checks bypasses KYC/dealer/
+    MNP evaluation entirely, so a CSR can force activation through
+    despite whichever rule originally rejected it.
+    """
+    subscriber_id = _register_pending(sqlite_connection, "act-sub-0008", "9876546608")
+    failing_settings = Settings(_env_file=None, kyc_stub_verified=False, mnp_stub_success=False)
+
+    subscription = activate_subscriber(
+        sqlite_connection,
+        subscriber_id,
+        "DEALER-FAIL",
+        failing_settings,
+        _ACTIVATED_AT,
+        skip_rule_checks=True,
+    )
+
+    assert subscription.state == SubscriberState.ACTIVE
+
+
+def test_activate_subscriber_with_skip_rule_checks_still_enforces_the_fsm(
+    sqlite_connection: sqlite3.Connection, all_flags_pass_settings: Settings
+) -> None:
+    """Bypassing rule checks doesn't bypass FSM validity — an
+    already-ACTIVE subscription still can't be "activated" again.
+    """
+    subscriber_id = _register_pending(sqlite_connection, "act-sub-0009", "9876546609")
+    activate_subscriber(
+        sqlite_connection, subscriber_id, _VALID_DEALER_CODE, all_flags_pass_settings, _ACTIVATED_AT
+    )
+
+    with pytest.raises(InvalidSubscriberStateException):
+        activate_subscriber(
+            sqlite_connection,
+            subscriber_id,
+            _VALID_DEALER_CODE,
+            all_flags_pass_settings,
+            _ACTIVATED_AT,
+            skip_rule_checks=True,
+        )

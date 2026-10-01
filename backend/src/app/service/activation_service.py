@@ -29,6 +29,7 @@ def activate_subscriber(
     dealer_code: str,
     settings: Settings,
     activated_at: datetime,
+    skip_rule_checks: bool = False,
 ) -> Subscription:
     """Evaluate KYC/dealer/MNP rules and transition subscriber_id's
     subscription from PENDING_KYC to ACTIVE.
@@ -40,11 +41,17 @@ def activate_subscriber(
     no StateTransition row is written. Raises
     DuplicateActiveSubscriptionError (AC-6) if a sibling registration for
     the same mobile number already won the race to ACTIVE.
+
+    If skip_rule_checks is True (E6-S2 CSR override support), the KYC/
+    dealer/MNP rule evaluation is bypassed entirely — but FSM validity is
+    still enforced, so an already-ACTIVE subscription still cannot be
+    "activated" again.
     """
     subscription = _get_subscription_or_raise(connection, subscriber_id)
 
     transition(subscription.state, SubscriberState.ACTIVE)
-    _evaluate_activation_rules(connection, dealer_code, settings)
+    if not skip_rule_checks:
+        _evaluate_activation_rules(connection, dealer_code, settings)
 
     try:
         activate_subscription(connection, subscription.subscription_id, activated_at)

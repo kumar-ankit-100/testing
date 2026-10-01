@@ -344,3 +344,53 @@ def test_plan_change_on_a_subscription_with_no_current_plan_version_raises(
 
     with pytest.raises(ValueError, match="no current plan version"):
         preview_plan_change(sqlite_connection, subscription_id, _TO_PLAN_ID, change_at, settings)
+
+
+def test_commit_plan_change_with_skip_eligibility_checks_bypasses_min_tenure(
+    sqlite_connection: sqlite3.Connection, settings: Settings
+) -> None:
+    """E6-S2: CSR override support — skip_eligibility_checks bypasses the
+    minimum-tenure rule so a CSR can force a plan change through despite
+    MIN_TENURE_NOT_MET."""
+    _seed_plans(sqlite_connection)
+    activated_at = datetime(2026, 6, 1, 9, 0, tzinfo=UTC)
+    subscription_id = _register_active(sqlite_connection, "pc-sub-0010", "9876549910", activated_at)
+    change_at = activated_at + timedelta(days=10)  # well under 90-day minimum
+
+    record = commit_plan_change(
+        sqlite_connection,
+        subscription_id,
+        _TO_PLAN_ID,
+        change_at,
+        settings,
+        skip_eligibility_checks=True,
+    )
+
+    assert record.to_plan_version_id == _TO_PLAN_ID
+    assert list_billing_records_for_subscription(sqlite_connection, subscription_id) == [record]
+
+
+def test_commit_plan_change_with_skip_eligibility_checks_still_rejects_suspended(
+    sqlite_connection: sqlite3.Connection, settings: Settings
+) -> None:
+    """Bypassing eligibility doesn't bypass state checks — SUSPENDED is
+    still rejected even with skip_eligibility_checks=True."""
+    _seed_plans(sqlite_connection)
+    activated_at = datetime(2026, 1, 1, 9, 0, tzinfo=UTC)
+    subscription_id = _register_active(sqlite_connection, "pc-sub-0011", "9876549911", activated_at)
+    sqlite_connection.execute(
+        "UPDATE subscriptions SET state = 'SUSPENDED' WHERE subscription_id = ?",
+        (subscription_id,),
+    )
+    sqlite_connection.commit()
+    change_at = activated_at + timedelta(days=120)
+
+    with pytest.raises(SubscriptionSuspendedError):
+        commit_plan_change(
+            sqlite_connection,
+            subscription_id,
+            _TO_PLAN_ID,
+            change_at,
+            settings,
+            skip_eligibility_checks=True,
+        )
