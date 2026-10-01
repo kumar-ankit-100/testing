@@ -6,7 +6,7 @@
  * Types layer — imports only from ./domain.
  */
 
-import type { PlanType } from "./domain";
+import type { PlanType, Role } from "./domain";
 
 /** Money fields are always JSON strings on the wire (e.g. "499.00"). */
 export type DecimalString = string;
@@ -61,4 +61,21 @@ export interface ApiErrorEnvelope {
     message: string;
     details: Record<string, unknown>;
   };
+}
+
+/**
+ * POST /api/auth/login (E1-S6). Staff login supplies username+password;
+ * subscriber self-service supplies mobile_number only.
+ */
+export interface LoginRequest {
+  username?: string;
+  password?: string;
+  mobile_number?: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  role: Role;
+  subscriber_id: string | null;
+  expires_in: number;
 }

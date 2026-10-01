@@ -101,3 +101,36 @@ def test_create_user_persists_null_optional_fields_as_none(
     assert fetched is not None
     assert fetched.mobile_number is None
     assert fetched.subscriber_id is None
+
+
+def test_schema_seeds_exactly_one_demo_user_per_staff_role(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    """E1-S6 AC-4: exactly one seeded demo user for each of CSR, ADMIN,
+    and DEALER, with password_hash populated via a real KDF (never
+    plaintext).
+    """
+    for role in (Role.CSR, Role.ADMIN, Role.DEALER):
+        row = sqlite_connection.execute(
+            "SELECT COUNT(*) FROM users WHERE role = ?", (role.value,)
+        ).fetchone()
+        assert row[0] == 1, f"expected exactly one seeded {role.value} user"
+
+    rows = sqlite_connection.execute(
+        "SELECT username, password_hash FROM users WHERE role IN ('csr', 'admin', 'dealer')"
+    ).fetchall()
+    for username, password_hash in rows:
+        assert username is not None
+        assert password_hash is not None
+        assert password_hash.startswith("pbkdf2_sha256$")
+
+
+def test_seeded_csr_user_is_findable_by_username(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    user = get_user_by_username(sqlite_connection, "csr_jane")
+
+    assert user is not None
+    assert user.role == Role.CSR
+    assert user.password_hash is not None
+    assert "CsrDemo" not in user.password_hash

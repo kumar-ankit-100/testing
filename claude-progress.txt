@@ -556,3 +556,59 @@ FINDING — auth-login spec gap (flagged, not blocking):
 next_action: awaiting user decision on the auth-login gap, then Group F (E2-S5 subscriber UI,
   E4-S4 plan change API, E5-S4 suspend/resume+port-out API, E6-S2 CSR override service, E6-S5
   termination service, E7-S2 reporting service) per specs/stories/dependency-graph.md.
+
+=== Session 6 ===
+date: 2026-10-01
+mode: /implement (generator)
+groups_completed: [A, B, C, D, E] (E confirmed evaluator PASS per prior session's process_note)
+current_story: E1-S6 (auth login endpoint — the fix story the user decided on, inserted ahead
+  of Group F; not a numbered dependency-graph group on its own)
+sprint_contract: none written yet for E1-S6
+last_commit: 409ab8e on feat/e1-s6-auth-login (not yet merged to develop as of this entry —
+  merge happens immediately after, see git section)
+backend_test_suite: 255/255 passing (was 237 before this story), 100% coverage across all 1111
+  statements, ruff clean, mypy --strict clean
+frontend_test_suite: 26/26 vitest tests passing (was 12), eslint clean, tsc --noEmit clean,
+  production build succeeds, dev server smoke-tested serving the login page by default
+coverage: 100% backend
+learned_rules: 1 (unchanged)
+blocked_stories: none
+
+Verified before starting: confirmed develop tip = d00baa1 (the spec-only commit adding E1-S6/
+E2-S5's amended ACs) as the coordinator specified, re-ran the full backend suite on that tip
+(237/237, ruff/mypy clean) before branching feat/e1-s6-auth-login from it. Note: a prior attempt
+at this same task failed immediately with a rate-limit error before any work was done (develop
+was still at d00baa1, no branch existed) — this session started fresh per the coordinator's
+explicit instruction, not a resume.
+
+what_was_built (E1-S6) — full detail in iteration-log.md's "## E1-S6" section:
+  - Backend: auth_service.hash_password/verify_password (PBKDF2-HMAC-SHA256, stdlib, no new
+    dependency); schema.sql seeds one demo CSR/ADMIN/DEALER user each with real, precomputed
+    password hashes; api/routers/auth_router.py implements POST /api/auth/login (staff
+    username+password -> 200 + role/subject-bearing token reusing E1-S4's
+    create_access_token/decode_access_token exactly; subscriber mobile_number -> 200 +
+    pre-registration token, subscriber_id null until a real subscribers-table row exists;
+    invalid staff credentials -> 401 UNAUTHENTICATED, identical response AND code path for
+    unknown-username vs. wrong-password via a dummy-hash check; every attempt logged through
+    logging_service, reusing PII_FIELD_NAMES masking as-is).
+  - Required migration (explicitly in scope, high regression risk, handled carefully): both
+    tests/integration/test_auth.py (E1-S4) and tests/integration/test_plan_api.py (E3-S3) — both
+    already evaluator-approved — now obtain every bearer token through the real
+    POST /api/auth/login endpoint instead of calling create_access_token() directly.
+    test_auth_service.py (pure unit-level token tests) left exactly as-is per the story's own
+    note. Full suite re-run after both migrations: 237 -> 255 tests, zero regressions beyond one
+    intentional assertion loosening (a staff user_id, previously a literal string, is now a real
+    seeded UUID asserted as truthy). test_auth.py's existing "subscriber A's token against
+    subscriber B's endpoint -> 403" test now doubles as E1-S6 AC-6's proof, since it exercises a
+    token the real endpoint issued.
+  - Frontend (E2-S5's two auth ACs only, its other four ACs explicitly deferred): login page +
+    role-based route guard + token storage/attachment. Caught and fixed a real state-sync bug
+    before writing any test for it — RouteGuard and LoginPage each independently calling
+    useAuth() meant a successful login would never be visible to the guard's own hook instance;
+    fixed by lifting the one useAuth() call to App.tsx and passing state down as props.
+
+next_action: coordinator to independently re-verify (full backend suite + ruff + mypy, full
+  frontend suite + lint + typecheck + build) before merging feat/e1-s6-auth-login into develop;
+  then write a sprint contract and hand off to evaluator. After E1-S6 evaluation, Group F (E2-S5
+  subscriber UI remaining four ACs, E4-S4 plan change API, E5-S4 suspend/resume+port-out API,
+  E6-S2 CSR override service, E6-S5 termination service, E7-S2 reporting service) is next.
