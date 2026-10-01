@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.error_handlers import register_exception_handlers
 from app.api.routers.auth_router import router as auth_router
 from app.api.routers.health_router import router as health_router
+from app.api.routers.plan_change_router import router as plan_change_router
 from app.api.routers.plan_router import router as plan_router
 from app.api.routers.subscriber_router import router as subscriber_router
 from app.config.db import create_connection
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(health_router)
     app.include_router(plan_router)
+    app.include_router(plan_change_router)
     app.include_router(subscriber_router)
     return app
 
