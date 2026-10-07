@@ -16,6 +16,7 @@ describe("useRegistration", () => {
       subscriber_id: "sub-1",
       subscription_id: "subn-1",
       state: "PENDING_KYC",
+      access_token: "fresh-token-for-sub-1",
     });
 
     const { result } = renderHook(() => useRegistration());
