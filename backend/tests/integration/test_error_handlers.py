@@ -12,7 +12,9 @@ from app.types.exceptions import (
     DuplicateActiveSubscriptionError,
     InvalidMobileNumberError,
     InvalidSubscriberStateException,
+    MissingOverrideReasonError,
     PlanVersionImmutableError,
+    SubscriptionNotActiveError,
 )
 
 
@@ -45,6 +47,14 @@ def _build_test_app() -> FastAPI:
         raise InvalidSubscriberStateException(
             SubscriberState.PENDING_KYC, SubscriberState.SUSPENDED
         )
+
+    @test_app.get("/dummy/subscription-not-active")
+    def raise_subscription_not_active() -> None:
+        raise SubscriptionNotActiveError("subn_99", SubscriberState.PENDING_KYC)
+
+    @test_app.get("/dummy/missing-override-reason")
+    def raise_missing_override_reason() -> None:
+        raise MissingOverrideReasonError()
 
     return test_app
 
@@ -97,3 +107,19 @@ def test_invalid_subscriber_state_otherwise_maps_to_invalid_state_transition() -
 
     assert response.status_code == 409
     assert response.json()["error"]["reason_code"] == "INVALID_STATE_TRANSITION"
+
+
+def test_subscription_not_active_error_maps_to_409() -> None:
+    with TestClient(_build_test_app()) as client:
+        response = client.get("/dummy/subscription-not-active")
+
+    assert response.status_code == 409
+    assert response.json()["error"]["reason_code"] == "INVALID_STATE_TRANSITION"
+
+
+def test_missing_override_reason_error_maps_to_422() -> None:
+    with TestClient(_build_test_app()) as client:
+        response = client.get("/dummy/missing-override-reason")
+
+    assert response.status_code == 422
+    assert response.json()["error"]["reason_code"] == "MISSING_OVERRIDE_REASON"
