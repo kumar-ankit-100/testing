@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 
-import { setStoredSession } from "../../config/authStorage";
+import { setStoredSession, setStoredSubscriptionId } from "../../config/authStorage";
 import { useRegistration } from "../../service/useRegistration";
 import type { PlanType } from "../../types/domain";
 
@@ -32,6 +32,7 @@ export function RegisterPage({ onRegistered }: RegisterPageProps): React.JSX.Ele
     const response = await register(mobileNumber, identityProofRef, planType);
     if (response !== null) {
       setStoredSession(response.access_token, "subscriber", response.subscriber_id);
+      setStoredSubscriptionId(response.subscription_id);
       onRegistered(response.subscriber_id);
     }
   }
