@@ -3,7 +3,24 @@
 API layer.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class RegisterStaffRequest(BaseModel):
+    """POST /api/auth/register-staff request body (CSR/admin/dealer only;
+    subscribers register via POST /api/subscribers/register instead)."""
+
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=8)
+    role: str
+
+
+class RegisterStaffResponse(BaseModel):
+    """POST /api/auth/register-staff 201 response."""
+
+    user_id: str
+    username: str
+    role: str
 
 
 class LoginRequest(BaseModel):
