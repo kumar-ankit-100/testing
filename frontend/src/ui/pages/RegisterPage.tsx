@@ -1,7 +1,11 @@
 /**
  * Subscriber self-registration page (E2-S5 AC-1): submits mobile
  * number, identity-proof reference, and plan type to the registration
- * endpoint. On success, hands the resulting subscriber_id up via
+ * endpoint. On success, stores the fresh, subscriber_id-scoped
+ * access_token the endpoint returns (register requires auth — E1-S6 —
+ * but a subscriber's pre-registration token has no subscriber_id yet;
+ * the activate call right after this needs one, per
+ * require_own_subscriber) and hands the subscriber_id up via
  * onRegistered so the caller can move on to the activation step.
  *
  * UI layer.
@@ -9,6 +13,7 @@
 
 import { useState } from "react";
 
+import { setStoredSession } from "../../config/authStorage";
 import { useRegistration } from "../../service/useRegistration";
 import type { PlanType } from "../../types/domain";
 
@@ -26,6 +31,7 @@ export function RegisterPage({ onRegistered }: RegisterPageProps): React.JSX.Ele
     event.preventDefault();
     const response = await register(mobileNumber, identityProofRef, planType);
     if (response !== null) {
+      setStoredSession(response.access_token, "subscriber", response.subscriber_id);
       onRegistered(response.subscriber_id);
     }
   }

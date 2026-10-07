@@ -20,3 +20,4 @@ backend/data/
 *.db-wal
 *.db-shm
 *.tsbuildinfo
+frontend/.vite/
