@@ -3,12 +3,20 @@
  * the activation endpoint and displays the outcome — a success badge
  * with state ACTIVE, or the specific rejection reason code/message.
  *
- * Once ACTIVE, renders the subscriber's own subscription-management
- * panel (E5-S5 suspend/resume/port-out; E4-S5 plan change preview and
- * commit) — subscription_id comes from authStorage (set once at
- * registration, E2-S5/E4-S5/E5-S5's shared source of truth) rather than
- * a prop, since this page's props contract (just subscriberId) predates
- * these two stories and activate's own response never carries it.
+ * Which screen shows (dealer-code form vs. management panel) is driven
+ * by the subscription's REAL backend state (useSubscriptionDetail),
+ * not by local activation-flow state — the local state resets to null
+ * on every page load/refresh, which previously bounced an already-
+ * ACTIVE subscriber back to the dealer-code form and then rejected
+ * their re-submission with "Invalid transition from ACTIVE to ACTIVE".
+ *
+ * Once past PENDING_KYC, renders the subscriber's own
+ * subscription-management panel (E5-S5 suspend/resume/port-out; E4-S5
+ * plan change preview and commit) — subscription_id comes from
+ * authStorage (set once at registration, E2-S5/E4-S5/E5-S5's shared
+ * source of truth) rather than a prop, since this page's props
+ * contract (just subscriberId) predates these two stories and
+ * activate's own response never carries it.
  *
  * UI layer.
  */
@@ -23,6 +31,7 @@ import { usePlanChange } from "../../service/usePlanChange";
 import { usePublishedPlans } from "../../service/usePublishedPlans";
 import { useSubscriptionDetail } from "../../service/useSubscriptionDetail";
 import type { SubscriptionDetailResponse } from "../../types/api";
+import type { SubscriberState } from "../../types/domain";
 
 export interface ActivationStatusPageProps {
   subscriberId: string;
@@ -31,24 +40,44 @@ export interface ActivationStatusPageProps {
 export function ActivationStatusPage({
   subscriberId,
 }: ActivationStatusPageProps): React.JSX.Element {
-  const { state, reasonCode, message, isSubmitting, activate } = useActivationStatus();
+  const { reasonCode, message, isSubmitting, activate } = useActivationStatus();
+  const subscriptionDetail = useSubscriptionDetail(subscriberId);
   const [dealerCode, setDealerCode] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     await activate(subscriberId, dealerCode);
+    subscriptionDetail.refresh();
   }
+
+  // First load: we don't know the real state yet — don't flash the
+  // dealer-code form at an already-ACTIVE subscriber while this
+  // resolves.
+  if (subscriptionDetail.loading && subscriptionDetail.detail === null) {
+    return (
+      <div className="auth-shell">
+        <h1>Activate your subscription</h1>
+        <p>Loading your subscription status…</p>
+      </div>
+    );
+  }
+
+  const currentState = subscriptionDetail.detail?.state ?? null;
+  const isPastActivation = currentState !== null && currentState !== "PENDING_KYC";
 
   return (
     <div className="auth-shell">
       <h1>Activate your subscription</h1>
 
-      {state === "ACTIVE" ? (
+      {isPastActivation ? (
         <>
           <p data-testid="activation-success" role="status">
-            Your subscription is now <strong>ACTIVE</strong>.
+            Your subscription is <strong>{currentState}</strong>.
           </p>
-          <SubscriptionManagementPanel subscriberId={subscriberId} />
+          <SubscriptionManagementPanel
+            currentState={currentState}
+            subscriptionDetail={subscriptionDetail}
+          />
         </>
       ) : (
         <form onSubmit={(event) => void handleSubmit(event)}>
@@ -88,15 +117,16 @@ export function ActivationStatusPage({
 }
 
 function SubscriptionManagementPanel({
-  subscriberId,
+  currentState,
+  subscriptionDetail,
 }: {
-  subscriberId: string;
+  currentState: SubscriberState;
+  subscriptionDetail: ReturnType<typeof useSubscriptionDetail>;
 }): React.JSX.Element {
   const subscriptionId = getStoredSubscriptionId();
-  const lifecycle = useLifecycle("ACTIVE");
+  const lifecycle = useLifecycle(currentState);
   const planChange = usePlanChange();
   const publishedPlans = usePublishedPlans();
-  const subscriptionDetail = useSubscriptionDetail(subscriberId);
   const [targetPlanVersionId, setTargetPlanVersionId] = useState("");
 
   if (subscriptionId === null) {
