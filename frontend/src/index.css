@@ -56,6 +56,19 @@ h1 {
   border-color: #374151;
 }
 
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 0;
+}
+
+.admin-tabs button:disabled {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+  cursor: default;
+}
+
 .auth-shell {
   max-width: 420px;
   margin: 10vh auto;

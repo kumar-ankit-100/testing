@@ -9,18 +9,20 @@
  * Routing by role:
  *  - unauthenticated -> LoginPage
  *  - subscriber, no subscriber_id yet -> RegisterPage -> (on success) ActivationStatusPage
- *  - subscriber, already registered -> ActivationStatusPage directly
- *  - admin -> AdminPlanCatalogPage
- *  - csr / dealer -> no screen built yet (later UI stories: E6-S4 CSR queue).
- *    Shown as an explicit "not built yet" message rather than silently
- *    bouncing back to the login screen with no feedback, which is the
- *    exact confusing behavior this replaces.
+ *    (which itself grows a suspend/resume/port-out/plan-change panel once ACTIVE)
+ *  - admin -> AdminPlanCatalogPage / AdminReportsDashboardPage, toggled by tab
+ *  - csr -> CsrExceptionQueuePage (override + termination tools)
+ *  - dealer -> no screen built yet (no story ever defined one — dealer-code
+ *    validation happens server-side during activation only, per E2-S1's
+ *    own "no dealer-facing UI" scope note)
  */
 
 import { useState } from "react";
 
 import { AdminPlanCatalogPage } from "./pages/AdminPlanCatalogPage";
+import { AdminReportsDashboardPage } from "./pages/AdminReportsDashboardPage";
 import { ActivationStatusPage } from "./pages/ActivationStatusPage";
+import { CsrExceptionQueuePage } from "./pages/CsrExceptionQueuePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { RouteGuard } from "./components/RouteGuard";
@@ -37,6 +39,30 @@ function SubscriberFlow({
     return <RegisterPage onRegistered={setSubscriberId} />;
   }
   return <ActivationStatusPage subscriberId={subscriberId} />;
+}
+
+type AdminTab = "catalog" | "reports";
+
+function AdminFlow(): React.JSX.Element {
+  const [tab, setTab] = useState<AdminTab>("catalog");
+
+  return (
+    <div>
+      <nav className="admin-tabs">
+        <button type="button" disabled={tab === "catalog"} onClick={() => setTab("catalog")}>
+          Plan Catalog
+        </button>
+        <button type="button" disabled={tab === "reports"} onClick={() => setTab("reports")}>
+          Reports
+        </button>
+      </nav>
+      {tab === "catalog" ? (
+        <AdminPlanCatalogPage planId="PLAN-5G" planName="Unlimited 5G Postpaid" planType="POSTPAID" />
+      ) : (
+        <AdminReportsDashboardPage />
+      )}
+    </div>
+  );
 }
 
 function NoScreenYet({ role }: { role: string }): React.JSX.Element {
@@ -62,11 +88,10 @@ export function App(): React.JSX.Element {
           Log out
         </button>
       </div>
-      {role === "admin" && (
-        <AdminPlanCatalogPage planId="PLAN-5G" planName="Unlimited 5G Postpaid" planType="POSTPAID" />
-      )}
+      {role === "admin" && <AdminFlow />}
       {role === "subscriber" && <SubscriberFlow subscriberId={subscriberId} />}
-      {(role === "csr" || role === "dealer") && <NoScreenYet role={role} />}
+      {role === "csr" && <CsrExceptionQueuePage />}
+      {role === "dealer" && <NoScreenYet role={role} />}
     </RouteGuard>
   );
 }
