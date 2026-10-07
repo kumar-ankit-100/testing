@@ -9,6 +9,7 @@ import sqlite3
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 
 from app.api.deps import get_db_connection, require_own_subscriber, require_role
 from app.api.schemas.subscriber_schemas import (
@@ -16,13 +17,15 @@ from app.api.schemas.subscriber_schemas import (
     ActivateSubscriberResponse,
     RegisterSubscriberRequest,
     RegisterSubscriberResponse,
+    SubscriptionDetailResponse,
 )
 from app.config.settings import Settings, get_settings
 from app.service.activation_service import activate_subscriber
 from app.service.auth_service import create_access_token
 from app.service.registration_service import register_subscriber
+from app.service.subscription_detail_service import get_subscription_detail
 from app.types.auth import Principal
-from app.types.enums import Role
+from app.types.enums import ReasonCode, Role
 
 router = APIRouter(prefix="/api/subscribers", tags=["subscribers"])
 
@@ -87,3 +90,28 @@ def activate(
         state=subscription.state,
         activated_at=subscription.activated_at,
     )
+
+
+@router.get("/{subscriber_id}/subscription", response_model=SubscriptionDetailResponse)
+def get_subscription(
+    subscriber_id: str,
+    connection: sqlite3.Connection = Depends(get_db_connection),
+    _principal: Principal = Depends(require_own_subscriber),
+) -> SubscriptionDetailResponse | JSONResponse:
+    """The subscriber dashboard's data source: subscription state plus
+    its current plan's name/price/terms, if one has been set.
+    """
+    try:
+        detail = get_subscription_detail(connection, subscriber_id)
+    except ValueError:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": {
+                    "reason_code": ReasonCode.NOT_FOUND.value,
+                    "message": f"No subscription found for subscriber {subscriber_id!r}",
+                    "details": {},
+                }
+            },
+        )
+    return SubscriptionDetailResponse.from_domain(detail)

@@ -125,6 +125,26 @@ def get_plan_version_by_id(
     return _row_to_plan_version(row)
 
 
+def list_current_published_versions(connection: sqlite3.Connection) -> list[PlanVersion]:
+    """Return the current (highest version_number) published version for
+    every plan_id in the catalog — the public, subscriber-browsable
+    plan list, as opposed to list_all_plan_versions' full admin history
+    (which includes drafts and superseded versions).
+    """
+    rows = connection.execute(
+        f"""
+        SELECT {_COLUMNS} FROM plan_versions pv
+        WHERE published = 1
+        AND version_number = (
+            SELECT MAX(version_number) FROM plan_versions
+            WHERE plan_id = pv.plan_id AND published = 1
+        )
+        ORDER BY plan_id ASC
+        """
+    ).fetchall()
+    return [version for row in rows if (version := _row_to_plan_version(row)) is not None]
+
+
 def list_all_plan_versions(connection: sqlite3.Connection) -> list[PlanVersion]:
     """Return every version across every plan_id, ordered by plan_id then
     version_number — the full catalog history (E3-S3 AC-4).
