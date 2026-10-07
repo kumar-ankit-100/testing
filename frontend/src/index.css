@@ -92,6 +92,19 @@ h1 {
   color: var(--muted, #666);
 }
 
+.dashboard-refresh-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dashboard-refresh-bar p {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--muted, #666);
+}
+
 label {
   display: block;
   font-size: 12px;
