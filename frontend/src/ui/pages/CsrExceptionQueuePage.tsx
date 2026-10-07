@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 
+import { KNOWN_DEALER_CODES } from "../../config/dealerCodes";
 import { useCsrOverride } from "../../service/useCsrOverride";
 import { useTerminate } from "../../service/useTerminate";
 
@@ -58,8 +59,19 @@ function OverrideActivationForm(): React.JSX.Element {
         id="ovr-act-dealer-code"
         value={dealerCode}
         onChange={(event) => setDealerCode(event.target.value)}
+        list="known-dealer-codes"
         required
       />
+      <datalist id="known-dealer-codes">
+        {KNOWN_DEALER_CODES.map(({ code, name }) => (
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
+      </datalist>
+      <p className="field-hint">
+        Valid dealer codes: {KNOWN_DEALER_CODES.map(({ code }) => code).join(", ")}
+      </p>
 
       <label htmlFor="ovr-act-original-reason">Original rejection reason</label>
       <input
