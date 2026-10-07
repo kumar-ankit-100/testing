@@ -86,6 +86,12 @@ h1 {
   margin-bottom: 20px;
 }
 
+.field-hint {
+  margin: -4px 0 12px;
+  font-size: 0.85em;
+  color: var(--muted, #666);
+}
+
 label {
   display: block;
   font-size: 12px;
