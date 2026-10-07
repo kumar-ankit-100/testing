@@ -11,6 +11,7 @@ from app.repository.plan_repository import (
     get_plan_version_by_id,
     get_published_version,
     list_all_plan_versions,
+    list_current_published_versions,
     list_versions,
     publish_plan_version,
     update_draft_plan_version,
@@ -221,3 +222,55 @@ def test_list_all_plan_versions_on_an_empty_database_is_empty(
     sqlite_connection: sqlite3.Connection,
 ) -> None:
     assert list_all_plan_versions(sqlite_connection) == []
+
+
+def test_list_current_published_versions_excludes_drafts(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    published = _build_draft("PLAN-5G", 1, "799.00")
+    draft = _build_draft("PLAN-4G", 1, "149.00")
+    create_plan_version(sqlite_connection, published)
+    create_plan_version(sqlite_connection, draft)
+    publish_plan_version(sqlite_connection, published.plan_version_id, _PUBLISHED_AT)
+
+    current = list_current_published_versions(sqlite_connection)
+
+    assert [v.plan_id for v in current] == ["PLAN-5G"]
+
+
+def test_list_current_published_versions_returns_only_the_highest_published_version_per_plan(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    v1 = _build_draft("PLAN-5G", 1, "799.00")
+    v2 = _build_draft("PLAN-5G", 2, "899.00")
+    create_plan_version(sqlite_connection, v1)
+    create_plan_version(sqlite_connection, v2)
+    publish_plan_version(sqlite_connection, v1.plan_version_id, _PUBLISHED_AT)
+    publish_plan_version(sqlite_connection, v2.plan_version_id, _PUBLISHED_AT)
+
+    current = list_current_published_versions(sqlite_connection)
+
+    assert len(current) == 1
+    assert current[0].version_number == 2
+    assert current[0].price == Decimal("899.00")
+
+
+def test_list_current_published_versions_spans_multiple_plan_ids(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    plan_a = _build_draft("PLAN-4G", 1, "149.00")
+    plan_b = _build_draft("PLAN-5G", 1, "799.00")
+    create_plan_version(sqlite_connection, plan_a)
+    create_plan_version(sqlite_connection, plan_b)
+    publish_plan_version(sqlite_connection, plan_a.plan_version_id, _PUBLISHED_AT)
+    publish_plan_version(sqlite_connection, plan_b.plan_version_id, _PUBLISHED_AT)
+
+    current = list_current_published_versions(sqlite_connection)
+
+    assert {v.plan_id for v in current} == {"PLAN-4G", "PLAN-5G"}
+
+
+def test_list_current_published_versions_on_an_empty_database_is_empty(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    assert list_current_published_versions(sqlite_connection) == []
