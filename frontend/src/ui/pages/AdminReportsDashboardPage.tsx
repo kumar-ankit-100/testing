@@ -1,7 +1,10 @@
 /**
  * Admin reporting dashboard page (E7-S4): displays the activation
  * funnel, plan mix, churn, and stubbed ARPU trend from the admin
- * dashboard endpoint.
+ * dashboard endpoint. The underlying hook re-polls automatically, so
+ * this page stays live as subscribers/CSRs/admins change data
+ * elsewhere; a manual "Refresh now" button and a last-updated
+ * timestamp make that explicit rather than silently stale.
  *
  * UI layer.
  */
@@ -9,12 +12,12 @@
 import { useReports } from "../../service/useReports";
 
 export function AdminReportsDashboardPage(): React.JSX.Element {
-  const { dashboard, loading, error } = useReports();
+  const { dashboard, loading, error, lastUpdatedAt, refresh } = useReports();
 
-  if (loading) {
+  if (loading && dashboard === null) {
     return <p>Loading…</p>;
   }
-  if (error !== null) {
+  if (error !== null && dashboard === null) {
     return <p role="alert">{error}</p>;
   }
   if (dashboard === null) {
@@ -24,6 +27,16 @@ export function AdminReportsDashboardPage(): React.JSX.Element {
   return (
     <div className="app-shell" data-testid="admin-reports-dashboard">
       <h1>Reporting Dashboard</h1>
+
+      <div className="dashboard-refresh-bar">
+        {error !== null && <p role="alert">{error}</p>}
+        <p data-testid="dashboard-last-updated">
+          {lastUpdatedAt !== null ? `Last updated: ${lastUpdatedAt.toLocaleTimeString()}` : ""}
+        </p>
+        <button type="button" onClick={refresh} disabled={loading}>
+          {loading ? "Refreshing…" : "Refresh now"}
+        </button>
+      </div>
 
       <div className="panel">
         <h2>Activation funnel</h2>

@@ -80,11 +80,18 @@ export interface LoginResponse {
   expires_in: number;
 }
 
-/** POST /api/auth/register-staff: dynamic CSR/admin/dealer account creation. */
+/**
+ * POST /api/auth/register-staff: dynamic CSR/admin account creation.
+ * Dealer is intentionally excluded — it has no dealer-facing UI
+ * anywhere in this app (specs/design/system-design.md), so there is
+ * nowhere for a self-registered dealer account to log in to. The
+ * backend still accepts "dealer" (it's a valid Role for authorization
+ * tests and seed data), this app's UI just never offers it.
+ */
 export interface RegisterStaffRequest {
   username: string;
   password: string;
-  role: "csr" | "admin" | "dealer";
+  role: "csr" | "admin";
 }
 
 export interface RegisterStaffResponse {
