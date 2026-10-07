@@ -106,3 +106,75 @@ export interface ActivateSubscriberResponse {
   state: SubscriberState;
   activated_at: string;
 }
+
+/** Suspend/resume/terminate (E5-S4, E6-S6). */
+export interface LifecycleStateResponse {
+  subscription_id: string;
+  state: SubscriberState;
+}
+
+/** Port-out request/finalize (E5-S4). */
+export interface PortOutEventResponse {
+  port_out_event_id: string;
+  subscription_id: string;
+  requested_at: string;
+  cooling_period_end_at: string;
+  status: "PENDING" | "CANCELLED_WITHIN_WINDOW" | "FINALIZED";
+}
+
+export interface TerminateRequest {
+  reason_code: string;
+}
+
+/** Plan change preview/commit (E4-S4). */
+export interface PlanChangeRequest {
+  target_plan_version_id: string;
+}
+
+export interface PlanChangePreviewResponse {
+  pro_rata_amount: DecimalString;
+}
+
+export interface PlanChangeCommitResponse {
+  billing_record_id: string;
+  subscription_id: string;
+  from_plan_version_id: string | null;
+  to_plan_version_id: string;
+  pro_rata_amount: DecimalString;
+  billing_period_start: string;
+  billing_period_end: string;
+}
+
+/** Admin reporting dashboard (E7-S3). */
+export interface AdminDashboardResponse {
+  activation_funnel: Record<string, number>;
+  plan_mix: Record<string, number>;
+  plan_mix_percentages: Record<string, DecimalString>;
+  churn: Record<string, DecimalString>;
+  arpu_trend: Record<string, DecimalString>;
+  metadata: { arpu_trend_is_stubbed: boolean; arpu_trend_note: string };
+}
+
+/** CSR override API (E6-S3). */
+export interface OverrideActivationRequest {
+  dealer_code: string;
+  reason_code: string;
+  original_rejection_reason: string;
+}
+
+export interface OverrideActivationResponse {
+  subscriber_id: string;
+  state: SubscriberState;
+}
+
+export interface OverridePlanChangeRequest {
+  target_plan_version_id: string;
+  reason_code: string;
+  original_rejection_reason: string;
+}
+
+export interface OverridePlanChangeResponse {
+  billing_record_id: string;
+  subscription_id: string;
+  pro_rata_amount: DecimalString;
+}
