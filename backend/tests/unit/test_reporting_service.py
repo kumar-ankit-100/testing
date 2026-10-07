@@ -1,10 +1,11 @@
 """Unit tests for the admin reporting service (E7-S2)."""
 
 import sqlite3
+from decimal import Decimal
 
 import pytest
 
-from app.service.reporting_service import get_admin_dashboard
+from app.service.reporting_service import _as_percentages, get_admin_dashboard
 from app.types.auth import Principal
 from app.types.enums import Role
 from app.types.exceptions import AuthorizationError
@@ -66,6 +67,22 @@ def test_plan_mix_percentages_sum_to_100_within_tolerance(
     percentages = dashboard["plan_mix_percentages"]
     total = sum(percentages.values())
     assert abs(float(total) - 100.0) <= 0.1
+
+
+def test_as_percentages_corrects_a_rounding_remainder_onto_the_largest_bucket() -> None:
+    """AC-2: three equal buckets (1/3 each) round to 33.33 independently,
+    summing to 99.99 — the 0.01 remainder is given to the largest bucket
+    so the total is always exactly 100.00."""
+    percentages = _as_percentages({"A": 1, "B": 1, "C": 1})
+
+    assert sum(percentages.values()) == Decimal("100.00")
+    assert percentages["A"] == Decimal("33.34")
+    assert percentages["B"] == Decimal("33.33")
+    assert percentages["C"] == Decimal("33.33")
+
+
+def test_as_percentages_on_an_empty_dict_returns_empty() -> None:
+    assert _as_percentages({}) == {}
 
 
 def test_arpu_trend_metadata_is_labeled_as_stubbed(sqlite_connection: sqlite3.Connection) -> None:

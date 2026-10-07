@@ -217,3 +217,29 @@ def test_subscriber_calling_for_a_non_own_subscription_is_forbidden(
     )
 
     assert response.status_code == 403
+
+
+def _staff_token(client: TestClient, username: str, password: str) -> str:
+    response = client.post("/api/auth/login", json={"username": username, "password": password})
+    token: str = response.json()["access_token"]
+    return token
+
+
+def test_staff_can_preview_without_an_ownership_check(
+    client: TestClient, settings: Settings
+) -> None:
+    """A CSR/admin token bypasses the subscriber-ownership check entirely
+    (_require_own_subscription's early return for non-subscriber roles)."""
+    activated_at = datetime(2025, 1, 1, 9, 0, tzinfo=UTC)
+    subscription_id, to_plan_id = _seed_subscription(
+        settings, "pc-api-0007", "9876544407", SubscriberState.ACTIVE, activated_at
+    )
+    token = _staff_token(client, "csr_jane", "CsrDemo!2026Synthetic")
+
+    response = client.post(
+        f"/api/subscriptions/{subscription_id}/plan-change/preview",
+        json={"target_plan_version_id": to_plan_id},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
