@@ -22,6 +22,7 @@ from app.api.routers.auth_router import router as auth_router
 from app.api.routers.csr_router import router as csr_router
 from app.api.routers.health_router import router as health_router
 from app.api.routers.lifecycle_router import router as lifecycle_router
+from app.api.routers.plan_catalog_router import router as plan_catalog_router
 from app.api.routers.plan_change_router import router as plan_change_router
 from app.api.routers.plan_router import router as plan_router
 from app.api.routers.subscriber_router import router as subscriber_router
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(csr_router)
     app.include_router(health_router)
     app.include_router(plan_router)
+    app.include_router(plan_catalog_router)
     app.include_router(plan_change_router)
     app.include_router(lifecycle_router)
     app.include_router(subscriber_router)

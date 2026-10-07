@@ -14,6 +14,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.api.schemas.plan_schemas import PlanVersionSchema
+from app.service.subscription_detail_service import SubscriptionDetail
 from app.types.enums import PlanType, SubscriberState
 
 
@@ -46,3 +48,38 @@ class ActivateSubscriberResponse(BaseModel):
     subscriber_id: str
     state: SubscriberState
     activated_at: datetime
+
+
+class SubscriptionDetailResponse(BaseModel):
+    """GET /api/subscribers/{subscriber_id}/subscription 200 response —
+    the subscriber dashboard's main data source.
+    """
+
+    subscription_id: str
+    subscriber_id: str
+    mobile_number: str
+    plan_type: PlanType
+    state: SubscriberState
+    dealer_code: str | None
+    created_at: datetime
+    activated_at: datetime | None
+    current_plan: PlanVersionSchema | None
+
+    @classmethod
+    def from_domain(cls, detail: SubscriptionDetail) -> "SubscriptionDetailResponse":
+        subscription = detail.subscription
+        return cls(
+            subscription_id=subscription.subscription_id,
+            subscriber_id=subscription.subscriber_id,
+            mobile_number=subscription.mobile_number,
+            plan_type=subscription.plan_type,
+            state=subscription.state,
+            dealer_code=subscription.dealer_code,
+            created_at=subscription.created_at,
+            activated_at=subscription.activated_at,
+            current_plan=(
+                PlanVersionSchema.from_domain(detail.current_plan)
+                if detail.current_plan is not None
+                else None
+            ),
+        )

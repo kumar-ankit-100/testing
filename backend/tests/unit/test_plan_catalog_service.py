@@ -9,6 +9,7 @@ import pytest
 from app.repository.plan_repository import get_published_version, list_versions
 from app.service.plan_catalog_service import (
     create_draft_plan_version,
+    list_published_catalog,
     publish_plan_version,
     update_draft_plan_version,
 )
@@ -241,3 +242,35 @@ def test_update_draft_plan_version_raises_for_an_unknown_plan_version_id(
             price=Decimal("1.00"),
             terms={},
         )
+
+
+def test_list_published_catalog_excludes_drafts_and_is_open_to_any_role(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    draft = create_draft_plan_version(
+        sqlite_connection,
+        _ADMIN,
+        plan_id="PLAN-5G",
+        plan_name="Unlimited 5G Postpaid",
+        plan_type=PlanType.POSTPAID,
+        price=Decimal("799.00"),
+        terms={"data_gb": 100},
+        created_at=_CREATED_AT,
+    )
+    publish_plan_version(sqlite_connection, _ADMIN, "PLAN-5G", draft.plan_version_id, _PUBLISHED_AT)
+    create_draft_plan_version(
+        sqlite_connection,
+        _ADMIN,
+        plan_id="PLAN-4G",
+        plan_name="4G Basic",
+        plan_type=PlanType.PREPAID,
+        price=Decimal("149.00"),
+        terms={"data_gb": 10},
+        created_at=_CREATED_AT,
+    )
+
+    catalog_for_subscriber = list_published_catalog(sqlite_connection)
+    catalog_for_csr = list_published_catalog(sqlite_connection)
+
+    assert [v.plan_id for v in catalog_for_subscriber] == ["PLAN-5G"]
+    assert catalog_for_csr == catalog_for_subscriber

@@ -127,6 +127,20 @@ export interface ActivateSubscriberResponse {
   activated_at: string;
 }
 
+/** GET /api/subscribers/{subscriber_id}/subscription: the subscriber
+ * dashboard's data source. */
+export interface SubscriptionDetailResponse {
+  subscription_id: string;
+  subscriber_id: string;
+  mobile_number: string;
+  plan_type: PlanType;
+  state: SubscriberState;
+  dealer_code: string | null;
+  created_at: string;
+  activated_at: string | null;
+  current_plan: PlanVersionDto | null;
+}
+
 /** Suspend/resume/terminate (E5-S4, E6-S6). */
 export interface LifecycleStateResponse {
   subscription_id: string;

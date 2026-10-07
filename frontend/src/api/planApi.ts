@@ -19,6 +19,15 @@ export async function listPlanVersions(): Promise<PlanVersionDto[]> {
   return response.plans;
 }
 
+/** GET /api/plans: the current published version of every plan_id, open
+ * to any authenticated role — unlike listPlanVersions above, which is
+ * admin-only and includes drafts/superseded versions. Subscribers use
+ * this to browse plans to pick a plan-change target. */
+export async function listPublishedPlans(): Promise<PlanVersionDto[]> {
+  const response = await apiFetch<PlanVersionListResponse>("/api/plans");
+  return response.plans;
+}
+
 export async function createPlanVersion(
   request: CreatePlanVersionRequest,
 ): Promise<CreatePlanVersionResponse> {
