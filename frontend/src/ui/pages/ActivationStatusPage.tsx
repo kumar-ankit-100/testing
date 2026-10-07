@@ -16,6 +16,7 @@
 import { useState } from "react";
 
 import { getStoredSubscriptionId } from "../../config/authStorage";
+import { KNOWN_DEALER_CODES } from "../../config/dealerCodes";
 import { useActivationStatus } from "../../service/useActivationStatus";
 import { useLifecycle } from "../../service/useLifecycle";
 import { usePlanChange } from "../../service/usePlanChange";
@@ -53,8 +54,20 @@ export function ActivationStatusPage({
             id="dealer-code"
             value={dealerCode}
             onChange={(event) => setDealerCode(event.target.value)}
+            list="known-dealer-codes"
             required
           />
+          <datalist id="known-dealer-codes">
+            {KNOWN_DEALER_CODES.map(({ code, name }) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+          </datalist>
+          <p className="field-hint">
+            Valid dealer codes:{" "}
+            {KNOWN_DEALER_CODES.map(({ code }) => code).join(", ")}
+          </p>
 
           {reasonCode !== null && (
             <p role="alert" data-testid="activation-rejection" data-reason-code={reasonCode}>
