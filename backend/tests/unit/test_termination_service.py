@@ -187,3 +187,16 @@ def test_successful_termination_logs_a_structured_entry_with_masked_actor(
         )
 
     assert any("terminat" in message.lower() for message in caplog.messages)
+
+
+def test_terminating_an_unknown_subscription_id_raises(
+    sqlite_connection: sqlite3.Connection,
+) -> None:
+    with pytest.raises(ValueError, match="No subscription found"):
+        terminate_subscription(
+            sqlite_connection,
+            _csr_principal(),
+            "does-not-exist",
+            reason_code="CUSTOMER_REQUESTED",
+            terminated_at=_TERMINATED_AT,
+        )

@@ -9,13 +9,18 @@ unchecked.
 import sqlite3
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import current_principal, get_db_connection
-from app.api.schemas.lifecycle_schemas import LifecycleStateResponse, PortOutEventResponse
+from app.api.schemas.lifecycle_schemas import (
+    LifecycleStateResponse,
+    PortOutEventResponse,
+    TerminateRequest,
+)
 from app.repository.subscriber_repository import get_subscription_by_id
 from app.service.port_out_service import cancel_port_out, finalize_port_out, request_port_out
 from app.service.suspend_resume_service import resume_subscription, suspend_subscription
+from app.service.termination_service import terminate_subscription
 from app.types.auth import Principal
 from app.types.enums import Role, SubscriberState
 from app.types.exceptions import AuthorizationError
@@ -104,6 +109,30 @@ def port_out_finalize(
     _require_own_subscription(connection, subscription_id, principal)
     event = finalize_port_out(connection, subscription_id, _actor(principal), datetime.now(UTC))
     return _event_response(event)
+
+
+@router.post("/{subscription_id}/terminate", response_model=LifecycleStateResponse)
+def terminate(
+    subscription_id: str,
+    request: TerminateRequest,
+    connection: sqlite3.Connection = Depends(get_db_connection),
+    principal: Principal = Depends(current_principal),
+) -> LifecycleStateResponse:
+    """E6-S6: CSR/admin-only termination. termination_service itself
+    enforces the CSR-or-ADMIN role check and raises ValueError for an
+    unknown subscription_id — checked here first so that case maps to a
+    clean 404 rather than an unhandled 500 (termination_service.py has no
+    typed not-found exception of its own; see its module docstring).
+    """
+    if get_subscription_by_id(connection, subscription_id) is None:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    subscription = terminate_subscription(
+        connection, principal, subscription_id, request.reason_code, datetime.now(UTC)
+    )
+    return LifecycleStateResponse(
+        subscription_id=subscription.subscription_id, state=subscription.state
+    )
 
 
 def _event_response(event: PortOutEvent) -> PortOutEventResponse:

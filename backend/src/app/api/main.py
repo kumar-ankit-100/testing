@@ -17,7 +17,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.error_handlers import register_exception_handlers
+from app.api.routers.admin_reports_router import router as admin_reports_router
 from app.api.routers.auth_router import router as auth_router
+from app.api.routers.csr_router import router as csr_router
 from app.api.routers.health_router import router as health_router
 from app.api.routers.lifecycle_router import router as lifecycle_router
 from app.api.routers.plan_change_router import router as plan_change_router
@@ -51,7 +53,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     register_exception_handlers(app)
+    app.include_router(admin_reports_router)
     app.include_router(auth_router)
+    app.include_router(csr_router)
     app.include_router(health_router)
     app.include_router(plan_router)
     app.include_router(plan_change_router)
