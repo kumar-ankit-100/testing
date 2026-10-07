@@ -7,7 +7,7 @@ import { LoginPage } from "../src/ui/pages/LoginPage";
 describe("LoginPage", () => {
   it("submits staff credentials by default", async () => {
     const onLogin = vi.fn().mockResolvedValue(true);
-    render(<LoginPage onLogin={onLogin} />);
+    render(<LoginPage onLogin={onLogin} onGoToStaffRegister={() => {}} />);
 
     fireEvent.change(screen.getByLabelText("Username"), { target: { value: "admin_raj" } });
     fireEvent.change(screen.getByLabelText("Password"), {
@@ -25,7 +25,7 @@ describe("LoginPage", () => {
 
   it("submits a mobile number when subscriber mode is selected", async () => {
     const onLogin = vi.fn().mockResolvedValue(true);
-    render(<LoginPage onLogin={onLogin} />);
+    render(<LoginPage onLogin={onLogin} onGoToStaffRegister={() => {}} />);
 
     fireEvent.click(screen.getByLabelText("Subscriber"));
     fireEvent.change(screen.getByLabelText("Mobile number"), {
@@ -40,7 +40,7 @@ describe("LoginPage", () => {
 
   it("shows an error message when login fails", async () => {
     const onLogin = vi.fn().mockResolvedValue(false);
-    render(<LoginPage onLogin={onLogin} />);
+    render(<LoginPage onLogin={onLogin} onGoToStaffRegister={() => {}} />);
 
     fireEvent.change(screen.getByLabelText("Username"), { target: { value: "admin_raj" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "wrong" } });

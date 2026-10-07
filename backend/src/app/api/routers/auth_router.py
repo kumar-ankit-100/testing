@@ -7,15 +7,21 @@ API layer — imports Types, Config, Repository, Service.
 
 import sqlite3
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import get_db_connection
-from app.api.schemas.auth_schemas import LoginRequest, LoginResponse
+from app.api.schemas.auth_schemas import (
+    LoginRequest,
+    LoginResponse,
+    RegisterStaffRequest,
+    RegisterStaffResponse,
+)
 from app.config.settings import Settings, get_settings
 from app.repository.subscriber_repository import get_subscriber_by_mobile
 from app.repository.user_repository import get_user_by_username
 from app.service.auth_service import create_access_token, verify_password
 from app.service.logging_service import get_logger
+from app.service.staff_registration_service import register_staff_user
 from app.types.auth import Principal
 from app.types.enums import Role
 from app.types.exceptions import AuthenticationError
@@ -47,6 +53,28 @@ def login(
     if request.mobile_number is not None:
         return _login_subscriber(connection, request.mobile_number, settings)
     return _login_staff(connection, request.username, request.password, settings)
+
+
+@router.post(
+    "/register-staff", response_model=RegisterStaffResponse, status_code=status.HTTP_201_CREATED
+)
+def register_staff(
+    request: RegisterStaffRequest,
+    connection: sqlite3.Connection = Depends(get_db_connection),
+) -> RegisterStaffResponse:
+    """Dynamic CSR/admin/dealer account creation. 422 for an unrecognized
+    or non-staff role, 409 (via DuplicateUsernameError) for an existing
+    username.
+    """
+    try:
+        role = Role(request.role)
+        user = register_staff_user(connection, request.username, request.password, role)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return RegisterStaffResponse(
+        user_id=user.user_id, username=user.username or "", role=user.role.value
+    )
 
 
 def _login_staff(
