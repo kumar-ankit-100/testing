@@ -91,6 +91,15 @@ def publish_plan_version(
     return _find_version(connection, plan_id, plan_version_id)
 
 
+def list_published_catalog(connection: sqlite3.Connection) -> list[PlanVersion]:
+    """Return the current published version of every plan_id — deliberately
+    open to any authenticated role (no _require_admin call), since
+    subscribers need this to browse plans at registration and when
+    choosing a plan-change target.
+    """
+    return plan_repository.list_current_published_versions(connection)
+
+
 def _require_admin(principal: Principal) -> None:
     if principal.role != Role.ADMIN:
         raise AuthorizationError(
