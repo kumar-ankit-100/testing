@@ -11,6 +11,7 @@ import type {
   ActivateSubscriberResponse,
   RegisterSubscriberRequest,
   RegisterSubscriberResponse,
+  SubscriptionDetailResponse,
 } from "../types/api";
 
 export async function registerSubscriber(
@@ -33,4 +34,10 @@ export async function activateSubscriber(
       body: JSON.stringify(request),
     },
   );
+}
+
+export async function getSubscriptionDetail(
+  subscriberId: string,
+): Promise<SubscriptionDetailResponse> {
+  return apiFetch<SubscriptionDetailResponse>(`/api/subscribers/${subscriberId}/subscription`);
 }

@@ -105,6 +105,22 @@ h1 {
   color: var(--muted, #666);
 }
 
+.detail-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0;
+}
+
+.detail-grid dt {
+  color: var(--muted, #666);
+  font-size: 0.85em;
+}
+
+.detail-grid dd {
+  margin: 0;
+}
+
 label {
   display: block;
   font-size: 12px;
