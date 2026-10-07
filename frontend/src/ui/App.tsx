@@ -88,7 +88,11 @@ export function App(): React.JSX.Element {
   const fallback =
     unauthenticatedScreen === "staff-register" ? (
       <StaffRegisterPage
-        onRegistered={() => setUnauthenticatedScreen("login")}
+        onRegistered={() => {
+          /* StaffRegisterPage shows its own "Account created" confirmation
+           * and a Back-to-login button; only that button should navigate
+           * away, so this stays a no-op. */
+        }}
         onBackToLogin={() => setUnauthenticatedScreen("login")}
       />
     ) : (
