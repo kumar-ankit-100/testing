@@ -17,6 +17,7 @@ describe("RegisterPage", () => {
       subscriber_id: "sub-42",
       subscription_id: "subn-42",
       state: "PENDING_KYC",
+      access_token: "fresh-token-for-sub-42",
     });
     const onRegistered = vi.fn();
 
