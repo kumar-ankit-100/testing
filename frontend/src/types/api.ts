@@ -80,6 +80,19 @@ export interface LoginResponse {
   expires_in: number;
 }
 
+/** POST /api/auth/register-staff: dynamic CSR/admin/dealer account creation. */
+export interface RegisterStaffRequest {
+  username: string;
+  password: string;
+  role: "csr" | "admin" | "dealer";
+}
+
+export interface RegisterStaffResponse {
+  user_id: string;
+  username: string;
+  role: string;
+}
+
 /**
  * POST /api/subscribers/register and GET-style activation status
  * polling (E2-S5).

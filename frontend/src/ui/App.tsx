@@ -25,6 +25,7 @@ import { ActivationStatusPage } from "./pages/ActivationStatusPage";
 import { CsrExceptionQueuePage } from "./pages/CsrExceptionQueuePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { StaffRegisterPage } from "./pages/StaffRegisterPage";
 import { RouteGuard } from "./components/RouteGuard";
 import { useAuth } from "../service/useAuth";
 
@@ -77,11 +78,25 @@ function NoScreenYet({ role }: { role: string }): React.JSX.Element {
   );
 }
 
+type UnauthenticatedScreen = "login" | "staff-register";
+
 export function App(): React.JSX.Element {
   const { isAuthenticated, role, subscriberId, login, logout } = useAuth();
+  const [unauthenticatedScreen, setUnauthenticatedScreen] =
+    useState<UnauthenticatedScreen>("login");
+
+  const fallback =
+    unauthenticatedScreen === "staff-register" ? (
+      <StaffRegisterPage
+        onRegistered={() => setUnauthenticatedScreen("login")}
+        onBackToLogin={() => setUnauthenticatedScreen("login")}
+      />
+    ) : (
+      <LoginPage onLogin={login} onGoToStaffRegister={() => setUnauthenticatedScreen("staff-register")} />
+    );
 
   return (
-    <RouteGuard isAuthenticated={isAuthenticated} role={role} fallback={<LoginPage onLogin={login} />}>
+    <RouteGuard isAuthenticated={isAuthenticated} role={role} fallback={fallback}>
       <div className="topbar">
         <span>role: {role}</span>
         <button type="button" onClick={logout}>

@@ -16,11 +16,12 @@ import type { LoginRequest } from "../../types/api";
 
 export interface LoginPageProps {
   onLogin: (request: LoginRequest) => Promise<boolean>;
+  onGoToStaffRegister: () => void;
 }
 
 type LoginMode = "staff" | "subscriber";
 
-export function LoginPage({ onLogin }: LoginPageProps): React.JSX.Element {
+export function LoginPage({ onLogin, onGoToStaffRegister }: LoginPageProps): React.JSX.Element {
   const [mode, setMode] = useState<LoginMode>("staff");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -104,6 +105,17 @@ export function LoginPage({ onLogin }: LoginPageProps): React.JSX.Element {
 
         <button type="submit">Log in</button>
       </form>
+
+      {mode === "staff" ? (
+        <p>
+          No staff account yet?{" "}
+          <button type="button" onClick={onGoToStaffRegister}>
+            Register
+          </button>
+        </p>
+      ) : (
+        <p>New subscriber? Log in with your mobile number, then register on the next screen.</p>
+      )}
     </div>
   );
 }

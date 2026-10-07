@@ -14,6 +14,7 @@ from app.types.exceptions import (
     AuthorizationError,
     CoolingPeriodNotElapsedError,
     DuplicateActiveSubscriptionError,
+    DuplicateUsernameError,
     InvalidMobileNumberError,
     InvalidSubscriberStateException,
     MinTenureNotMetError,
@@ -103,6 +104,12 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request, exc: MissingOverrideReasonError
     ) -> JSONResponse:
         return _error_response(422, ReasonCode.MISSING_OVERRIDE_REASON, str(exc))
+
+    @app.exception_handler(DuplicateUsernameError)
+    async def _handle_duplicate_username_error(
+        _request: Request, exc: DuplicateUsernameError
+    ) -> JSONResponse:
+        return _error_response(409, ReasonCode.DUPLICATE_USERNAME, str(exc))
 
 
 def _error_response(status_code: int, reason_code: ReasonCode, message: str) -> JSONResponse:
