@@ -133,3 +133,13 @@ class SubscriptionNotActiveError(Exception):
             f"Subscription {subscription_id!r} is {current_state.value}, "
             "not eligible for a plan change"
         )
+
+
+class DuplicateUsernameError(Exception):
+    """Raised when staff self-registration is attempted with a username
+    that already exists. reason_code: DUPLICATE_USERNAME.
+    """
+
+    def __init__(self, username: str) -> None:
+        self.username = username
+        super().__init__(f"Username {username!r} is already taken")
