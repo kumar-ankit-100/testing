@@ -182,3 +182,47 @@ def test_register_request_body_rejects_an_unknown_plan_type(client: TestClient) 
     )
 
     assert response.status_code == 422
+
+
+def test_get_subscription_returns_detail_for_the_owning_subscriber(client: TestClient) -> None:
+    registered = _register(client, "9876541008")
+
+    response = client.get(
+        f"/api/subscribers/{registered['subscriber_id']}/subscription",
+        headers={"Authorization": f"Bearer {registered['access_token']}"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["subscriber_id"] == registered["subscriber_id"]
+    assert body["state"] == "PENDING_KYC"
+    assert body["current_plan"] is None
+
+
+def test_get_subscription_for_another_subscribers_token_returns_403(client: TestClient) -> None:
+    registered = _register(client, "9876541009")
+    other_token = _login(client, "9876541010")
+
+    response = client.get(
+        f"/api/subscribers/{registered['subscriber_id']}/subscription",
+        headers={"Authorization": f"Bearer {other_token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_get_subscription_for_an_unknown_subscriber_id_returns_404(client: TestClient) -> None:
+    """A staff token bypasses the subscriber-ownership check (require_own_subscriber's
+    documented staff-bypass), reaching the service's own not-found path.
+    """
+    admin_login = client.post(
+        "/api/auth/login", json={"username": "admin_raj", "password": "AdminDemo!2026Synthetic"}
+    )
+    admin_token = admin_login.json()["access_token"]
+
+    response = client.get(
+        "/api/subscribers/does-not-exist/subscription",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 404
