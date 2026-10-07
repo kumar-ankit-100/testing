@@ -1,8 +1,15 @@
 /**
- * Staff self-registration page: creates a dynamic CSR/admin/dealer
- * account via POST /api/auth/register-staff. On success, hands control
- * back to the login screen (register then login are two distinct
- * steps) rather than auto-logging-in.
+ * Staff self-registration page: creates a dynamic CSR or admin account
+ * via POST /api/auth/register-staff. On success, hands control back to
+ * the login screen (register then login are two distinct steps) rather
+ * than auto-logging-in.
+ *
+ * Dealer is deliberately not offered here: per specs/design/
+ * system-design.md and specs/stories/E2-S1.md, the dealer role has no
+ * dealer-facing UI anywhere in this app — it exists only as an
+ * authorization-test identity and as the seeded DealerMaster reference
+ * table consulted server-side during activation. A dealer account
+ * created here would have nowhere to log in to.
  *
  * UI layer.
  */
@@ -16,7 +23,7 @@ export interface StaffRegisterPageProps {
   onBackToLogin: () => void;
 }
 
-type StaffRole = "csr" | "admin" | "dealer";
+type StaffRole = "csr" | "admin";
 
 export function StaffRegisterPage({
   onRegistered,
@@ -80,7 +87,6 @@ export function StaffRegisterPage({
         >
           <option value="csr">CSR</option>
           <option value="admin">Admin</option>
-          <option value="dealer">Dealer</option>
         </select>
 
         {error !== null && <p role="alert">{error}</p>}

@@ -12,9 +12,13 @@
  *    (which itself grows a suspend/resume/port-out/plan-change panel once ACTIVE)
  *  - admin -> AdminPlanCatalogPage / AdminReportsDashboardPage, toggled by tab
  *  - csr -> CsrExceptionQueuePage (override + termination tools)
- *  - dealer -> no screen built yet (no story ever defined one — dealer-code
- *    validation happens server-side during activation only, per E2-S1's
- *    own "no dealer-facing UI" scope note)
+ *
+ * dealer is deliberately not routed here: per specs/design/
+ * system-design.md and specs/stories/E2-S1.md, no story ever defined a
+ * dealer-facing screen — dealer codes are validated server-side against
+ * the seeded DealerMaster table during activation, and the dealer role
+ * exists only for the auth/authorization test matrix. There is nothing
+ * for this app to show a dealer-role token.
  */
 
 import { useState } from "react";
@@ -66,18 +70,6 @@ function AdminFlow(): React.JSX.Element {
   );
 }
 
-function NoScreenYet({ role }: { role: string }): React.JSX.Element {
-  return (
-    <div className="auth-shell">
-      <h1>Logged in as {role}</h1>
-      <p>
-        No {role} screen has been built yet — this role authenticates correctly, but there is no
-        UI for it in this build.
-      </p>
-    </div>
-  );
-}
-
 type UnauthenticatedScreen = "login" | "staff-register";
 
 export function App(): React.JSX.Element {
@@ -110,7 +102,6 @@ export function App(): React.JSX.Element {
       {role === "admin" && <AdminFlow />}
       {role === "subscriber" && <SubscriberFlow subscriberId={subscriberId} />}
       {role === "csr" && <CsrExceptionQueuePage />}
-      {role === "dealer" && <NoScreenYet role={role} />}
     </RouteGuard>
   );
 }
