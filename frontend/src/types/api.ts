@@ -94,6 +94,7 @@ export interface RegisterSubscriberResponse {
   subscriber_id: string;
   subscription_id: string;
   state: SubscriberState;
+  access_token: string;
 }
 
 export interface ActivateSubscriberRequest {

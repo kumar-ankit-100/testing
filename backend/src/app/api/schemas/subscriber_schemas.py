@@ -1,14 +1,13 @@
 """Pydantic request/response models for the registration and activation
-API (E2-S4).
-
-API layer. Note: api-contracts.md documents these routes as requiring a
-bearer token (a "pre-registration token" for register, "subscriber
-(self)" ownership for activate, both obtained from POST /api/auth/login)
-— but no story in specs/stories/dependency-graph.md builds that login
-endpoint, and E2-S4's own acceptance criteria don't test auth for either
-route. Both routes are therefore implemented without an auth gate for
-now; a future auth-API story would need to add one once a way to mint a
-token for a specific subscriber actually exists.
+API (E2-S4), auth-gated per api-contracts.md since E1-S6 built the login
+endpoint these routes were originally waiting on: register requires a
+subscriber-role bearer token (the "pre-registration token" from
+POST /api/auth/login with just a mobile_number); activate requires that
+token's subscriber_id to match the path parameter (require_own_subscriber,
+E1-S4). register's response includes a fresh access_token with
+subscriber_id populated, exactly as api-contracts.md documents, so the
+caller can use it for the subsequent activate call instead of the stale
+pre-registration token.
 """
 
 from datetime import datetime
@@ -32,6 +31,7 @@ class RegisterSubscriberResponse(BaseModel):
     subscriber_id: str
     subscription_id: str
     state: SubscriberState
+    access_token: str
 
 
 class ActivateSubscriberRequest(BaseModel):
